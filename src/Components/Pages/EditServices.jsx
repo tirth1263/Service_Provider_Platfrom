@@ -29,7 +29,7 @@ export default function EditService() {
       // We're in Add mode, so no need to load anything
       setIsLoading(false);
     }
-  }, [serviceId]);
+  }, []);
 
   const loadServiceData = () => {
     try {

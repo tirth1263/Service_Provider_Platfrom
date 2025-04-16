@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 const Register = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('');
@@ -10,6 +11,11 @@ const Register = () => {
 
   const registerUser = (event) => {
     event.preventDefault();
+
+    if (!name.trim()) {
+      alert('Please enter your name to continue');
+      return;
+    }
 
     // Admin email restriction
     if (email === 'tirth.rank@gmail.com') {
@@ -32,7 +38,7 @@ const Register = () => {
     if (emailExists) {
       // If only email exists, replace the existing user with new details
       const updatedUsers = users.filter(u => u.email !== email);
-      updatedUsers.push({ email, password, role });
+      updatedUsers.push({ name, email, password, role });
       localStorage.setItem('users', JSON.stringify(updatedUsers));
       
       alert('Your account has been updated with new information. Please login.');
@@ -47,7 +53,7 @@ const Register = () => {
     }
 
     // Save new user
-    users.push({ email, password, role });
+    users.push({ name, email, password, role });
     localStorage.setItem('users', JSON.stringify(users));
 
     alert('Registration successful! Please login.');
@@ -59,6 +65,14 @@ const Register = () => {
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
         <h2 className="text-center text-xl font-semibold text-gray-800 mb-6">Register</h2>
         <form onSubmit={registerUser}>
+          <input
+            type="text"
+            placeholder="Your Name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full p-3 mb-4 border border-gray-300 rounded-lg"
+          />
           <input
             type="email"
             placeholder="Email"

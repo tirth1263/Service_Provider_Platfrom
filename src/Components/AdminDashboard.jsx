@@ -15,39 +15,66 @@ const AdminDashboard = () => {
 
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [serviceSearchTerm, setServiceSearchTerm] = useState('');
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     loadUsers();
     loadServices();
     loadReviews();
+    
+    // Load user theme preference
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (currentUser && currentUser.themePreference) {
+      setDarkMode(currentUser.themePreference === 'dark');
+    } else {
+      // Default to system preference if no saved preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setDarkMode(prefersDark);
+    }
   }, []);
 
+  // Apply theme classes when darkMode changes
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  const toggleTheme = () => {
+    const newTheme = !darkMode;
+    setDarkMode(newTheme);
+    
+    // Save user preference
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (currentUser) {
+      currentUser.themePreference = newTheme ? 'dark' : 'light';
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      
+      // Also update the user in the users array
+      const allUsers = JSON.parse(localStorage.getItem('users')) || [];
+      const updatedUsers = allUsers.map(user => {
+        if (user.id === currentUser.id) {
+          return {...user, themePreference: newTheme ? 'dark' : 'light'};
+        }
+        return user;
+      });
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+    }
+  };
+
   const loadUsers = () => {
-    // Get users from localStorage and ensure they have the expected structure
     let storedUsers = JSON.parse(localStorage.getItem('users')) || [];
-
-    // For debugging - check if there are users in localStorage
     console.log("Loaded users from localStorage:", storedUsers);
-
-    // Ensure each user has required properties
     storedUsers = storedUsers.map((user, index) => ({
       id: user.id || index + 1,
-      username: user.username || 'Unknown',
+      name: user.name || 'Unknown',  // Using name instead of username to match your data structure
       email: user.email || 'No email',
-      role: user.role || 'User'
+      role: user.role || 'User',
+      themePreference: user.themePreference || 'light'
     }));
-
     setUsers(storedUsers);
-
-    // If no users are found, you might want to add some initial test data
-    if (storedUsers.length === 0) {
-      const initialUsers = [
-        { id: 1, username: 'admin', email: 'admin@example.com', role: 'Admin' },
-        { id: 2, username: 'user1', email: 'user1@example.com', role: 'User' }
-      ];
-      setUsers(initialUsers);
-      localStorage.setItem('users', JSON.stringify(initialUsers));
-    }
   };
 
   const loadServices = () => {
@@ -87,7 +114,6 @@ const AdminDashboard = () => {
 
   const addService = (e) => {
     e.preventDefault();
-    // Make sure we're working with numeric IDs
     const newId = services.length
       ? Math.max(...services.map(s => typeof s.id === 'number' ? s.id : 0)) + 1
       : 1;
@@ -104,7 +130,6 @@ const AdminDashboard = () => {
     setServices(updatedServices);
     localStorage.setItem('services', JSON.stringify(updatedServices));
 
-    // Reset form
     setFormData({
       name: '',
       description: '',
@@ -114,11 +139,12 @@ const AdminDashboard = () => {
 
     alert('Service added successfully!');
   };
+
   const filterUsers = () => {
     if (!userSearchTerm) return users;
 
     return users.filter(user =>
-      (user.username && user.username.toLowerCase().includes(userSearchTerm.toLowerCase())) ||
+      (user.name && user.name.toLowerCase().includes(userSearchTerm.toLowerCase())) ||
       (user.email && user.email.toLowerCase().includes(userSearchTerm.toLowerCase())) ||
       (user.role && user.role.toLowerCase().includes(userSearchTerm.toLowerCase()))
     );
@@ -139,21 +165,70 @@ const AdminDashboard = () => {
     navigate(`/edit-service?id=${serviceId}`);
   };
 
+  // Export functionality
+  const exportToJSON = (data, filename) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+  };
+
+  const handleExportUsers = () => {
+    exportToJSON(users, 'users_list.json');
+  };
+
+  const handleExportServices = () => {
+    exportToJSON(services, 'services_list.json');
+  };
+
+  // Dynamically generate classes based on theme
+  const bgColor = darkMode ? 'bg-gray-900' : 'bg-gray-100';
+  const textColor = darkMode ? 'text-white' : 'text-gray-800';
+  const cardBg = darkMode ? 'bg-gray-800' : 'bg-white';
+  const headerBg = darkMode ? 'bg-gray-800' : 'bg-[#1f2a44]';
+  const tableBg = darkMode ? 'bg-gray-700' : 'bg-[#2c3e50]';
+  const tableHeaderText = 'text-white';
+  const tableBodyBg = darkMode ? 'bg-gray-800' : 'bg-white';
+  const tableBorder = darkMode ? 'border-gray-700' : 'border-gray-300';
+  const inputBg = darkMode ? 'bg-gray-700' : 'bg-white';
+  const inputText = darkMode ? 'text-white' : 'text-gray-800';
+  const inputBorder = darkMode ? 'border-gray-600' : 'border-gray-300';
+
   return (
-    <div className="font-['Poppins',sans-serif] bg-gray-100 text-gray-800 min-h-screen">
-      <header className="bg-[#1f2a44] text-white text-center py-4 text-xl font-semibold">
+    <div className={`font-['Poppins',sans-serif] ${bgColor} ${textColor} min-h-screen`}>
+      <header className={`${headerBg} text-white text-center py-4 text-xl font-semibold relative`}>
+        <div className="absolute right-4 top-4">
+          <button 
+            onClick={toggleTheme} 
+            className="p-2 rounded-full hover:bg-gray-700 transition-colors"
+            aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {darkMode ? (
+              // Sun icon for light mode
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            ) : (
+              // Moon icon for dark mode
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            )}
+          </button>
+        </div>
         Admin Dashboard - Mastang Resort
       </header>
 
       <div className="w-11/12 mx-auto py-5">
         <h2 className="text-center text-2xl font-semibold mb-4">User Management</h2>
 
-        <div className="bg-white p-5 rounded-lg shadow-md mb-6">
+        <div className={`${cardBg} p-5 rounded-lg shadow-md mb-6`}>
           <h3 className="text-xl font-medium mb-3">User List</h3>
           <input
             type="text"
             placeholder="Search by name, email or role"
-            className="w-full p-2 border border-gray-300 rounded-md mb-3"
+            className={`w-full p-2 ${inputBg} ${inputText} border ${inputBorder} rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500`}
             value={userSearchTerm}
             onChange={(e) => setUserSearchTerm(e.target.value)}
           />
@@ -163,21 +238,23 @@ const AdminDashboard = () => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr>
-                    <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">ID</th>
-                    <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">Username</th>
-                    <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">Email</th>
-                    <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">Role</th>
-                    <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">Actions</th>
+                    <th className={`${tableBg} ${tableHeaderText} border ${tableBorder} p-2`}>ID</th>
+                    <th className={`${tableBg} ${tableHeaderText} border ${tableBorder} p-2`}>Username</th>
+                    <th className={`${tableBg} ${tableHeaderText} border ${tableBorder} p-2`}>Email</th>
+                    <th className={`${tableBg} ${tableHeaderText} border ${tableBorder} p-2`}>Role</th>
+                    <th className={`${tableBg} ${tableHeaderText} border ${tableBorder} p-2`}>Theme</th>
+                    <th className={`${tableBg} ${tableHeaderText} border ${tableBorder} p-2`}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filterUsers().map(user => (
-                    <tr key={user.id}>
-                      <td className="border border-gray-300 p-2 text-center">{user.id}</td>
-                      <td className="border border-gray-300 p-2 text-center">{user.username}</td>
-                      <td className="border border-gray-300 p-2 text-center">{user.email || 'No email'}</td>
-                      <td className="border border-gray-300 p-2 text-center">{user.role || 'User'}</td>
-                      <td className="border border-gray-300 p-2 text-center">
+                    <tr key={user.id} className={tableBodyBg}>
+                      <td className={`border ${tableBorder} p-2 text-center`}>{user.id}</td>
+                      <td className={`border ${tableBorder} p-2 text-center`}>{user.name}</td>
+                      <td className={`border ${tableBorder} p-2 text-center`}>{user.email || 'No email'}</td>
+                      <td className={`border ${tableBorder} p-2 text-center`}>{user.role || 'User'}</td>
+                      <td className={`border ${tableBorder} p-2 text-center`}>{user.themePreference || 'light'}</td>
+                      <td className={`border ${tableBorder} p-2 text-center`}>
                         <button
                           onClick={() => deleteUser(user.id)}
                           className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded"
@@ -197,11 +274,21 @@ const AdminDashboard = () => {
           {filterUsers().length === 0 && users.length > 0 && (
             <p className="text-center py-3">No users match your search criteria.</p>
           )}
+
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={handleExportUsers}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
+            >
+              Export Users to JSON
+            </button>
+          </div>
+
         </div>
 
         <h2 className="text-center text-2xl font-semibold mb-4">Service Management</h2>
 
-        <div className="bg-white p-5 rounded-lg shadow-md mb-6">
+        <div className={`${cardBg} p-5 rounded-lg shadow-md mb-6`}>
           <h3 className="text-xl font-medium mb-3">Add Service</h3>
           <form onSubmit={addService}>
             <input
@@ -209,7 +296,7 @@ const AdminDashboard = () => {
               name="name"
               placeholder="Service Name"
               required
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 mb-3"
+              className={`w-full p-3 ${inputBg} ${inputText} border ${inputBorder} rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 mb-3`}
               value={formData.name}
               onChange={handleInputChange}
             />
@@ -219,7 +306,7 @@ const AdminDashboard = () => {
               name="description"
               placeholder="Description"
               required
-              className="w-full p-2 border border-gray-300 rounded-md mb-3"
+              className={`w-full p-2 ${inputBg} ${inputText} border ${inputBorder} rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-green-500`}
               value={formData.description}
               onChange={handleInputChange}
             />
@@ -228,7 +315,7 @@ const AdminDashboard = () => {
               name="cost"
               placeholder="Cost"
               required
-              className="w-full p-2 border border-gray-300 rounded-md mb-3"
+              className={`w-full p-2 ${inputBg} ${inputText} border ${inputBorder} rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-green-500`}
               value={formData.cost}
               onChange={handleInputChange}
             />
@@ -237,7 +324,7 @@ const AdminDashboard = () => {
               name="category"
               placeholder="Category"
               required
-              className="w-full p-2 border border-gray-300 rounded-md mb-3"
+              className={`w-full p-2 ${inputBg} ${inputText} border ${inputBorder} rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-green-500`}
               value={formData.category}
               onChange={handleInputChange}
             />
@@ -250,12 +337,12 @@ const AdminDashboard = () => {
           </form>
         </div>
 
-        <div className="bg-white p-5 rounded-lg shadow-md mb-6">
+        <div className={`${cardBg} p-5 rounded-lg shadow-md mb-6`}>
           <h3 className="text-xl font-medium mb-3">Service List</h3>
           <input
             type="text"
             placeholder="Search by name, category, or cost"
-            className="w-full p-2 border border-gray-300 rounded-md mb-3"
+            className={`w-full p-2 ${inputBg} ${inputText} border ${inputBorder} rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500`}
             value={serviceSearchTerm}
             onChange={(e) => setServiceSearchTerm(e.target.value)}
           />
@@ -264,33 +351,33 @@ const AdminDashboard = () => {
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">ID</th>
-                  <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">Name</th>
-                  <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">Description</th>
-                  <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">Cost</th>
-                  <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">Category</th>
-                  <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">Actions</th>
+                  <th className={`${tableBg} ${tableHeaderText} border ${tableBorder} p-2`}>ID</th>
+                  <th className={`${tableBg} ${tableHeaderText} border ${tableBorder} p-2`}>Name</th>
+                  <th className={`${tableBg} ${tableHeaderText} border ${tableBorder} p-2`}>Description</th>
+                  <th className={`${tableBg} ${tableHeaderText} border ${tableBorder} p-2`}>Cost</th>
+                  <th className={`${tableBg} ${tableHeaderText} border ${tableBorder} p-2`}>Category</th>
+                  <th className={`${tableBg} ${tableHeaderText} border ${tableBorder} p-2`}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filterServices().map(service => (
-                  <tr key={service.id}>
-                    <td className="border border-gray-300 p-2 text-center">{service.id}</td>
-                    <td className="border border-gray-300 p-2 text-center">{service.name}</td>
-                    <td className="border border-gray-300 p-2 text-center">{service.description}</td>
-                    <td className="border border-gray-300 p-2 text-center">${service.cost}</td>
-                    <td className="border border-gray-300 p-2 text-center">{service.category}</td>
-                    <td className="border border-gray-300 p-2 text-center">
+                  <tr key={service.id} className={tableBodyBg}>
+                    <td className={`border ${tableBorder} p-2 text-center`}>{service.id}</td>
+                    <td className={`border ${tableBorder} p-2 text-center`}>{service.name}</td>
+                    <td className={`border ${tableBorder} p-2 text-center`}>{service.description}</td>
+                    <td className={`border ${tableBorder} p-2 text-center`}>${service.cost}</td>
+                    <td className={`border ${tableBorder} p-2 text-center`}>{service.category}</td>
+                    <td className={`border ${tableBorder} p-2 text-center`}>
                       <div className="flex flex-col sm:flex-row justify-center gap-2">
                         <button
                           onClick={() => handleEditService(service.id)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded"
+                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => deleteService(service.id)}
-                          className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded"
+                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
                         >
                           Delete
                         </button>
@@ -298,45 +385,16 @@ const AdminDashboard = () => {
                     </td>
                   </tr>
                 ))}
-                {filterServices().length === 0 && (
-                  <tr>
-                    <td colSpan="6" className="border border-gray-300 p-2 text-center">No services found</td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
-        </div>
 
-        <div className="bg-white p-5 rounded-lg shadow-md mb-6">
-          <h3 className="text-xl font-medium mb-3">Customer Reviews</h3>
-
-          {reviews.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">Service</th>
-                    <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">User</th>
-                    <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">Rating</th>
-                    <th className="bg-[#2c3e50] text-white border border-gray-300 p-2">Comment</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reviews.map((review, index) => (
-                    <tr key={index}>
-                      <td className="border border-gray-300 p-2 text-center">{review.service}</td>
-                      <td className="border border-gray-300 p-2 text-center">{review.user}</td>
-                      <td className="border border-gray-300 p-2 text-center">{review.rating}</td>
-                      <td className="border border-gray-300 p-2 text-center">{review.comment}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-center py-3">No reviews available.</p>
-          )}
+          <button
+            onClick={handleExportServices}
+            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded mt-4"
+          >
+            Export Services to JSON
+          </button>
         </div>
       </div>
     </div>

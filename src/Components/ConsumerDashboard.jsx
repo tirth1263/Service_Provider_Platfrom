@@ -21,6 +21,8 @@ function UserDashboard() {
     name: "",
     email: "",
     password: "",
+    newPassword: "",
+    profilePicture: "", // Add profilePicture field
   })
   const [reviewData, setReviewData] = useState({
     service: "",
@@ -29,48 +31,81 @@ function UserDashboard() {
   })
   const [currentUser, setCurrentUser] = useState({ username: "Guest" })
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  // const [actualPassword, setActualPassword] = useState("");
+  // const [actualNewPassword, setActualNewPassword] = useState("");
 
   useEffect(() => {
     // Load data from localStorage
     const storedUser = localStorage.getItem("currentUser")
     const username = localStorage.getItem("username")
+    const userFullName = localStorage.getItem('userFullName')
     const storedServices = localStorage.getItem("services")
     const storedBookings = localStorage.getItem("bookings")
     const storedReviews = localStorage.getItem("reviews")
     const storedWishlist = localStorage.getItem("wishlist")
     const storedAvailability = localStorage.getItem("availableDates")
-
+    const profilePicture = localStorage.getItem("profilePicture") // Load profile picture
+  
     console.log("Stored user from localStorage:", storedUser)
     console.log("Username from localStorage:", username)
-
+  
+    // Get user's actual password from users array
+    const users = JSON.parse(localStorage.getItem("users")) || []
+    let userPassword = ""
+    
+    if (username) {
+      // Find user by email/username
+      const userRecord = users.find(user => user.email === username)
+      if (userRecord) {
+        userPassword = userRecord.password
+      }
+    }
+  
     // Check if either currentUser or username exists
-    if (storedUser || username) {
+    if (username || userFullName) {
+      const userData = {
+        email: username || "",
+        name: userFullName || "",
+        password: userPassword,  // Add the actual password here
+        profilePicture: profilePicture || "" // Add profile picture
+      }
+  
+      // Store it for consistency
+      localStorage.setItem('currentUser', JSON.stringify(userData))
+      setCurrentUser(userData)
+      setIsLoggedIn(true)
+  
+      setProfileData({
+        name: userFullName || "",
+        email: username || "",
+        password: userPassword, // Set the actual password
+        newPassword: "",
+        profilePicture: profilePicture || ""
+      });
+    } else if (storedUser) {
+      // Original code for handling storedUser
       try {
-        let userData
-
-        if (storedUser) {
-          userData = JSON.parse(storedUser)
-        } else if (username) {
-          // Create a user object from username
-          userData = { username: username, email: username }
-          // Store it in currentUser for consistency
-          localStorage.setItem("currentUser", JSON.stringify(userData))
-        }
-
-        // Ensure the user object has a username property
-        if (userData.email && !userData.username) {
-          userData.username = userData.email.split("@")[0] // Use part of email as username if not available
-        }
-
+        const userData = JSON.parse(storedUser)
         setCurrentUser(userData)
         setIsLoggedIn(true)
-        console.log("User is logged in as:", userData)
-
-        // Also update profileData with user info
+  
+        // Get user's actual password if not already in userData
+        if (!userData.password) {
+          const userRecord = users.find(user => user.email === userData.email)
+          if (userRecord) {
+            userData.password = userRecord.password
+          }
+        }
+  
         setProfileData({
           name: userData.name || "",
           email: userData.email || "",
-          password: "",
+          password: userData.password || "",
+          newPassword: "",
+          profilePicture: userData.profilePicture || profilePicture || ""
         })
       } catch (error) {
         console.error("Error parsing user data:", error)
@@ -78,7 +113,6 @@ function UserDashboard() {
         setIsLoggedIn(false)
       }
     } else {
-      console.log("No user found in localStorage, setting as Guest")
       setCurrentUser({ username: "Guest" })
       setIsLoggedIn(false)
     }
@@ -186,6 +220,7 @@ function UserDashboard() {
     // Check both currentUser and username in localStorage
     const storedUser = localStorage.getItem("currentUser")
     const username = localStorage.getItem("username")
+    const userFullName = localStorage.getItem("userFullName")
 
     if (!storedUser && !username) {
       setIsLoggedIn(false)
@@ -195,7 +230,11 @@ function UserDashboard() {
 
     // If we have a username but no currentUser, create one
     if (!storedUser && username) {
-      const userData = { username: username, email: username }
+      const userData = {
+        username: username,
+        email: username,
+        name: userFullName || "" // Add this line
+      }
       localStorage.setItem("currentUser", JSON.stringify(userData))
       setCurrentUser(userData)
     }
@@ -207,6 +246,11 @@ function UserDashboard() {
   const handleNavClick = (section) => {
     setActiveSection(section)
 
+    // Reset editing profile state when switching sections
+    if (section !== "profile") {
+      setIsEditingProfile(false)
+    }
+
     // If switching to calendar, reset selected date
     if (section === "calendar") {
       const today = new Date()
@@ -216,16 +260,90 @@ function UserDashboard() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem("currentUser")
-    setCurrentUser({ username: "Guest" })
-    setIsLoggedIn(false)
-    alert("Logged out!")
-    navigate("/login")
+    // Remove all user-related data from localStorage
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("username");
+    localStorage.removeItem("userFullName");
+    // Don't remove profile picture on logout so it persists between sessions
+    // localStorage.removeItem("profilePicture");
+
+    // Reset state
+    setCurrentUser({ username: "Guest" });
+    setIsLoggedIn(false);
+
+    // Navigate to login page
+    navigate("/login");
   }
 
+  // Handle profile picture upload
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result;
+        setProfileData({ ...profileData, profilePicture: base64String });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleProfileSubmit = (e) => {
-    e.preventDefault()
-    alert("Profile updated successfully! (Simulated)")
+    e.preventDefault();
+
+    // Check if the password has been changed
+    const isPasswordChanged = profileData.newPassword && profileData.newPassword.trim() !== "";
+
+    // Create updated user object
+    const updatedUser = {
+      ...currentUser,
+      name: profileData.name,
+      email: profileData.email,
+      password: profileData.newPassword || profileData.password, // Use new password if provided, otherwise current
+      profilePicture: profileData.profilePicture // Add profile picture to user data
+    };
+
+    // Update users array in localStorage if password changed
+    if (isPasswordChanged) {
+      // Get existing users
+      const users = JSON.parse(localStorage.getItem("users")) || [];
+
+      // Find and update the current user's password
+      const updatedUsers = users.map(user => {
+        if (user.email === profileData.email) {
+          return {
+            ...user,
+            password: profileData.newPassword,
+            profilePicture: profileData.profilePicture // Update profile picture in users array
+          };
+        }
+        return user;
+      });
+
+      // Save updated users back to localStorage
+      localStorage.setItem("users", JSON.stringify(updatedUsers));
+    }
+
+    // Save profile picture to localStorage separately
+    localStorage.setItem("profilePicture", profileData.profilePicture);
+
+    // Save to localStorage
+    localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+    localStorage.setItem("userFullName", profileData.name);
+
+    // Update current user state
+    setCurrentUser(updatedUser);
+
+    // Exit edit mode
+    setIsEditingProfile(false);
+
+    if (isPasswordChanged) {
+      alert("Password changed successfully! Please login again with your new password.");
+      handleLogout(); // Log the user out
+      navigate("/login"); // Redirect to login page
+    } else {
+      alert("Profile updated successfully!");
+    }
   }
 
   const handleReviewSubmit = (e) => {
@@ -291,6 +409,16 @@ function UserDashboard() {
       return
     }
 
+    // Check if the selected date is in the past
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const selectedDate = new Date(date)
+
+    if (selectedDate < today) {
+      alert("Please select a date in the future.")
+      return
+    }
+
     const service = services.find((s) => s.id === serviceId)
     if (!service) {
       console.error("Service not found")
@@ -311,6 +439,10 @@ function UserDashboard() {
     let userData
     try {
       userData = storedUser ? JSON.parse(storedUser) : { username: username, email: username }
+      // Add this line to make sure name is included in the object
+      if (storedUser && JSON.parse(storedUser).name) {
+        userData.name = JSON.parse(storedUser).name
+      }
     } catch (error) {
       console.error("Error parsing user data:", error)
       userData = { username: username || "Guest", email: username }
@@ -319,7 +451,7 @@ function UserDashboard() {
     const newBooking = {
       id: Date.now(), // Use timestamp to ensure unique IDs
       service: service.name,
-      user: userData.username || userData.email,
+      user: userData.name || userData.username || userData.email,
       email: userData.email,
       days: days,
       date: date,
@@ -350,8 +482,17 @@ function UserDashboard() {
     // Create date from day number (using current month and year)
     const today = new Date()
     const selectedDay = new Date(today.getFullYear(), today.getMonth(), day)
-    const formattedDate = selectedDay.toISOString().split("T")[0]
 
+    // Check if the selected date is in the past
+    const currentDate = new Date()
+    currentDate.setHours(0, 0, 0, 0)
+
+    if (selectedDay < currentDate) {
+      alert("You cannot select dates in the past.")
+      return
+    }
+
+    const formattedDate = selectedDay.toISOString().split("T")[0]
     setSelectedDate(formattedDate)
 
     // If a service is already selected, auto-fill its date input
@@ -420,6 +561,18 @@ function UserDashboard() {
     }
   }
 
+  const toggleEditProfile = () => {
+    setIsEditingProfile(!isEditingProfile)
+  }
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  }
+
+  const toggleNewPasswordVisibility = () => {
+    setShowNewPassword(!showNewPassword);
+  }
+
   const filteredServices = services.filter(
     (service) =>
       service.name.toLowerCase().includes(serviceQuery.toLowerCase()) ||
@@ -429,50 +582,12 @@ function UserDashboard() {
   )
 
   const userBookings = bookings.filter((b) => {
-    return currentUser && (b.user === currentUser.username || b.user === currentUser.email)
+    return currentUser && (b.user === currentUser.username || b.user === currentUser.email || b.user === currentUser.name)
   })
 
   const userReviews = reviews.filter((r) => {
-    return currentUser && (r.user === currentUser.username || r.user === currentUser.email)
+    return currentUser && (r.user === currentUser.username || r.user === currentUser.email || r.user === currentUser.name)
   })
-
-  // Generate calendar days for current month
-  const generateCalendarDays = () => {
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = today.getMonth()
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-    const firstDayOfMonth = new Date(year, month, 1).getDay()
-
-    // Create calendar grid
-    const calendarDays = []
-    let dayCounter = 1
-
-    // Generate weeks
-    for (let i = 0; i < 6; i++) {
-      const week = []
-      // Generate days for each week
-      for (let j = 0; j < 7; j++) {
-        if ((i === 0 && j < firstDayOfMonth) || dayCounter > daysInMonth) {
-          // Empty cell
-          week.push(null)
-        } else {
-          week.push(dayCounter)
-          dayCounter++
-        }
-      }
-      calendarDays.push(week)
-      // Stop if we've added all days
-      if (dayCounter > daysInMonth) break
-    }
-
-    return calendarDays
-  }
-
-  const calendarData = generateCalendarDays()
-  const today = new Date()
-  const currentMonth = today.toLocaleString("default", { month: "long" })
-  const currentYear = today.getFullYear()
 
   // Helper function to get image source - improved to correctly handle imported images
   const getImageSource = (service) => {
@@ -490,6 +605,9 @@ function UserDashboard() {
     return "https://via.placeholder.com/150"
   }
 
+  const today = new Date()
+  const currentYear = today.getFullYear()
+
   return (
     <div className="font-[Poppins] bg-gray-100 min-h-screen flex flex-col">
       <header className="bg-[#1f2a44] text-white text-center py-5 text-2xl font-semibold">
@@ -501,7 +619,6 @@ function UserDashboard() {
           { id: "services", label: "Browse Services" },
           { id: "bookings", label: "My Bookings" },
           { id: "wishlist", label: "My Wishlist" },
-          { id: "calendar", label: "Booking Calendar" },
           { id: "profile", label: "My Profile" },
           { id: "reviews", label: "Submit Feedback" },
           { id: "review-history", label: "My Reviews" },
@@ -532,11 +649,11 @@ function UserDashboard() {
         )}
       </nav>
 
-      {/* Welcome message showing login status */}
+      {/* Welcome message showing login status - Modified to show name instead of email */}
       <div className="w-11/12 mx-auto mt-4 p-3 bg-white rounded-lg shadow mb-5">
         <h2 className="text-xl">
           {isLoggedIn
-            ? `Welcome, ${currentUser.username || currentUser.email}!`
+            ? `Welcome, ${currentUser.name || localStorage.getItem('userFullName') || currentUser.username}!`
             : "Welcome, Guest! Please login to book services."}
         </h2>
       </div>
@@ -598,6 +715,7 @@ function UserDashboard() {
                             required
                             className="w-full p-2 border border-gray-300 rounded"
                             defaultValue={selectedDate}
+                            min={new Date().toISOString().split('T')[0]} // Prevent past dates
                           />
                         </div>
                       </div>
@@ -726,197 +844,383 @@ function UserDashboard() {
             </div>
           </div>
         )}
+{/* Profile Section - Enhanced with profile picture upload */}
+{activeSection === "profile" && (
+  <div className="bg-white p-5 rounded-lg shadow mb-5">
+    <h2 className="text-xl font-semibold mb-4">My Profile</h2>
 
-        {/* Calendar Section */}
-        {activeSection === "calendar" && (
-          <div className="bg-white p-5 rounded-lg shadow mb-5">
-            <h2 className="text-xl font-semibold mb-4">Booking Calendar</h2>
-
-            <div className="text-center mb-4">
-              <h3 className="text-lg font-medium">
-                {currentMonth} {currentYear}
-              </h3>
-              {selectedDate && <p className="mt-2 text-blue-600">Selected Date: {selectedDate}</p>}
+    {isLoggedIn ? (
+      <>
+        {!isEditingProfile ? (
+          <div className="flex flex-col md:flex-row items-start">
+            <div className="mb-4 md:mr-8">
+              {profileData.profilePicture ? (
+                <img 
+                  src={profileData.profilePicture} 
+                  alt="Profile" 
+                  className="w-32 h-32 rounded-full object-cover border-2 border-gray-300" 
+                />
+              ) : (
+                <div className="w-32 h-32 rounded-full bg-gray-300 flex items-center justify-center text-gray-500">
+                  <span className="text-3xl">👤</span>
+                </div>
+              )}
             </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-200">
-                    <th className="border border-gray-300 p-2">Sun</th>
-                    <th className="border border-gray-300 p-2">Mon</th>
-                    <th className="border border-gray-300 p-2">Tue</th>
-                    <th className="border border-gray-300 p-2">Wed</th>
-                    <th className="border border-gray-300 p-2">Thu</th>
-                    <th className="border border-gray-300 p-2">Fri</th>
-                    <th className="border border-gray-300 p-2">Sat</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {calendarData.map((week, weekIndex) => (
-                    <tr key={weekIndex}>
-                      {week.map((day, dayIndex) => {
-                        if (day === null) {
-                          return <td key={dayIndex} className="border border-gray-300 p-3"></td>
-                        }
-
-                        const isToday = day === today.getDate()
-                        const isSelected = selectedDate && day === Number.parseInt(selectedDate.split("-")[2])
-                        const isBooked = userBookings.some(
-                          (b) =>
-                            b.date &&
-                            new Date(b.date).getDate() === day &&
-                            new Date(b.date).getMonth() === today.getMonth() &&
-                            new Date(b.date).getFullYear() === today.getFullYear(),
-                        )
-
-                        return (
-                          <td
-                            key={dayIndex}
-                            onClick={() => handleDateClick(day)}
-                            className={`border border-gray-300 p-3 text-center cursor-pointer
-${isToday ? "bg-blue-100" : ""}
-${isSelected ? "bg-blue-500 text-white" : ""}
-${isBooked ? "bg-green-600 text-white" : ""}
-hover:bg-gray-100
-`}
-                          >
-                            {day}
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-4 text-sm">
-              <div className="flex items-center mb-2">
-                <div className="w-4 h-4 bg-blue-100 mr-2"></div>
-                <span>Today</span>
-              </div>
-              <div className="flex items-center mb-2">
-                <div className="w-4 h-4 bg-blue-500 mr-2"></div>
-                <span>Selected</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-green-600 mr-2"></div>
-                <span>Booked</span>
-              </div>
+            
+            <div className="flex-1">
+              <p className="mb-2"><strong>Name:</strong> {profileData.name || "(Not set)"}</p>
+              <p className="mb-2"><strong>Email:</strong> {profileData.email}</p>
+              <p className="mb-4"><strong>Password:</strong> ••••••••</p>
+              
+              <button
+                onClick={toggleEditProfile}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Edit Profile
+              </button>
             </div>
           </div>
-        )}
-
-        {/* Profile Section */}
-        {activeSection === "profile" && (
-          <div className="bg-white p-5 rounded-lg shadow mb-5">
-            <h2 className="text-xl font-semibold mb-4">My Profile</h2>
-
-            <form onSubmit={handleProfileSubmit}>
+        ) : (
+          <form onSubmit={handleProfileSubmit} className="space-y-4">
+            <div className="mb-6">
+              <label className="block mb-2">Profile Picture</label>
+              <div className="flex items-center space-x-4">
+                {profileData.profilePicture ? (
+                  <img 
+                    src={profileData.profilePicture} 
+                    alt="Profile Preview" 
+                    className="w-32 h-32 rounded-full object-cover border-2 border-gray-300" 
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-full bg-gray-300 flex items-center justify-center text-gray-500">
+                    <span className="text-3xl">👤</span>
+                  </div>
+                )}
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleProfilePictureChange}
+                  className="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block mb-2">Full Name</label>
               <input
                 type="text"
-                placeholder="Name"
-                className="w-full p-3 border border-gray-300 rounded mb-3"
                 value={profileData.name}
                 onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded"
                 required
               />
+            </div>
+            
+            <div>
+              <label className="block mb-2">Email</label>
               <input
                 type="email"
-                placeholder="Email"
-                className="w-full p-3 border border-gray-300 rounded mb-3"
                 value={profileData.email}
                 onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded"
                 required
+                disabled
               />
-              <input
-                type="password"
-                placeholder="New Password"
-                className="w-full p-3 border border-gray-300 rounded mb-3"
-                value={profileData.password}
-                onChange={(e) => setProfileData({ ...profileData, password: e.target.value })}
-              />
-              <button type="submit" className="w-full bg-green-600 text-white p-3 rounded hover:bg-green-700">
-                Update Profile
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Reviews Section */}
-        {activeSection === "reviews" && (
-          <div className="bg-white p-5 rounded-lg shadow mb-5">
-            <h2 className="text-xl font-semibold mb-4">Submit Feedback</h2>
-
-            <form onSubmit={handleReviewSubmit}>
-              <input
-                type="text"
-                placeholder="Service Name"
-                className="w-full p-3 border border-gray-300 rounded mb-3"
-                value={reviewData.service}
-                onChange={(e) => setReviewData({ ...reviewData, service: e.target.value })}
-                required
-              />
-
-              <select
-                className="w-full p-3 border border-gray-300 rounded mb-3"
-                value={reviewData.rating}
-                onChange={(e) => setReviewData({ ...reviewData, rating: e.target.value })}
-                required
-              >
-                <option value="5">5 - Excellent</option>
-                <option value="4">4 - Very Good</option>
-                <option value="3">3 - Good</option>
-                <option value="2">2 - Fair</option>
-                <option value="1">1 - Poor</option>
-              </select>
-
-              <textarea
-                placeholder="Your feedback"
-                className="w-full p-3 border border-gray-300 rounded mb-3 h-32"
-                value={reviewData.comment}
-                onChange={(e) => setReviewData({ ...reviewData, comment: e.target.value })}
-                required
-              ></textarea>
-
-              <button type="submit" className="w-full bg-green-600 text-white p-3 rounded hover:bg-green-700">
-                Submit Feedback
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Review History Section */}
-        {activeSection === "review-history" && (
-          <div className="bg-white p-5 rounded-lg shadow mb-5">
-            <h2 className="text-xl font-semibold mb-4">My Reviews</h2>
-
-            {userReviews.length > 0 ? (
-              <div className="space-y-4">
-                {userReviews.map((review, index) => (
-                  <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex justify-between">
-                      <h3 className="font-semibold">{review.service}</h3>
-                      <div className="flex">
-                        <span className="mr-2">{"⭐".repeat(Number.parseInt(review.rating))}</span>
-                        <button onClick={() => deleteReview(index)} className="text-red-600 hover:text-red-800">
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                    <p className="mt-2">{review.comment}</p>
-                  </div>
-                ))}
+              <small className="text-gray-500">Email cannot be changed</small>
+            </div>
+            
+            <div className="relative">
+              <label className="block mb-2">Current Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={profileData.password}
+                  onChange={(e) => setProfileData({ ...profileData, password: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded pr-10"
+                  required
+                />
+                <button 
+                  type="button"
+                  className="absolute right-3 top-3 text-gray-500"
+                  onClick={togglePasswordVisibility}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
               </div>
-            ) : (
-              <p className="text-center py-4">You haven't submitted any reviews yet.</p>
-            )}
+            </div>
+            
+            <div className="relative">
+              <label className="block mb-2">New Password (leave blank to keep current)</label>
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={profileData.newPassword}
+                  onChange={(e) => setProfileData({ ...profileData, newPassword: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded pr-10"
+                />
+                <button 
+                  type="button"
+                  className="absolute right-3 top-3 text-gray-500"
+                  onClick={toggleNewPasswordVisibility}
+                >
+                  {showNewPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                type="submit"
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                Save Changes
+              </button>
+              <button
+                type="button"
+                onClick={toggleEditProfile}
+                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </>
+    ) : (
+      <div className="text-center py-4">
+        <p>Please login to view your profile.</p>
+        <button
+          onClick={() => navigate("/login")}
+          className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Go to Login
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
+{/* Submit Review Section */}
+{activeSection === "reviews" && (
+  <div className="bg-white p-5 rounded-lg shadow mb-5">
+    <h2 className="text-xl font-semibold mb-4">Submit Feedback</h2>
+
+    {isLoggedIn ? (
+      <form onSubmit={handleReviewSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="service" className="block mb-2">
+            Select Service
+          </label>
+          <select
+            id="service"
+            value={reviewData.service}
+            onChange={(e) => setReviewData({ ...reviewData, service: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded"
+            required
+          >
+            <option value="">Select a service</option>
+            {services.map((service) => (
+              <option key={service.id} value={service.name}>
+                {service.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="rating" className="block mb-2">
+            Rating
+          </label>
+          <select
+            id="rating"
+            value={reviewData.rating}
+            onChange={(e) => setReviewData({ ...reviewData, rating: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded"
+            required
+          >
+            <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+            <option value="4">⭐⭐⭐⭐ (4/5)</option>
+            <option value="3">⭐⭐⭐ (3/5)</option>
+            <option value="2">⭐⭐ (2/5)</option>
+            <option value="1">⭐ (1/5)</option>
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="comment" className="block mb-2">
+            Comment
+          </label>
+          <textarea
+            id="comment"
+            value={reviewData.comment}
+            onChange={(e) => setReviewData({ ...reviewData, comment: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded min-h-[120px]"
+            required
+          ></textarea>
+        </div>
+
+        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          Submit Review
+        </button>
+      </form>
+    ) : (
+      <div className="text-center py-4">
+        <p>Please login to submit feedback.</p>
+        <button
+          onClick={() => navigate("/login")}
+          className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Go to Login
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
+{/* Review History Section */}
+{activeSection === "review-history" && (
+  <div className="bg-white p-5 rounded-lg shadow mb-5">
+    <h2 className="text-xl font-semibold mb-4">My Reviews</h2>
+
+    {isLoggedIn ? (
+      <div className="space-y-4">
+        {userReviews.map((review, index) => (
+          <div key={index} className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-semibold">{review.service}</h3>
+                <p className="text-yellow-500">
+                  {Array(parseInt(review.rating)).fill("⭐").join("")} ({review.rating}/5)
+                </p>
+                <p className="mt-2">{review.comment}</p>
+              </div>
+              <button
+                onClick={() => deleteReview(index)}
+                className="bg-red-600 text-white p-2 rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
           </div>
+        ))}
+
+        {userReviews.length === 0 && <p className="text-center py-4">You haven't submitted any reviews yet.</p>}
+      </div>
+    ) : (
+      <div className="text-center py-4">
+        <p>Please login to view your reviews.</p>
+        <button
+          onClick={() => navigate("/login")}
+          className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Go to Login
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
+{/* Calendar View Section */}
+{activeSection === "calendar" && (
+  <div className="bg-white p-5 rounded-lg shadow mb-5">
+    <h2 className="text-xl font-semibold mb-4">Availability Calendar</h2>
+
+    <div className="mb-4">
+      <p>
+        <strong>Selected Date:</strong> {selectedDate || "None"}
+      </p>
+    </div>
+
+    <div className="grid grid-cols-7 gap-1">
+      {/* Day names */}
+      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+        <div key={day} className="text-center font-semibold p-2 bg-[#2c3e50] text-white">
+          {day}
+        </div>
+      ))}
+
+      {/* Days */}
+      {Array(31)
+        .fill(null)
+        .map((_, i) => {
+          const day = i + 1
+          const date = new Date(today.getFullYear(), today.getMonth(), day)
+          const isPast = date < today && date.getMonth() === today.getMonth()
+          const isCurrentDay = day === today.getDate() && date.getMonth() === today.getMonth()
+
+          // Skip days that are not in the current month
+          if (date.getMonth() !== today.getMonth()) return null
+
+          return (
+            <div
+              key={i}
+              onClick={() => !isPast && handleDateClick(day)}
+              className={`cursor-pointer text-center p-3 border ${
+                isCurrentDay
+                  ? "bg-blue-100 border-blue-500"
+                  : isPast
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "hover:bg-green-100"
+              }`}
+            >
+              {day}
+            </div>
+          )
+        })}
+    </div>
+
+    <div className="mt-4">
+      <h3 className="font-semibold">Services Available on Selected Date</h3>
+      <div className="mt-2">
+        {selectedDate ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            {services.map((service) => {
+              const availableDates = availability[service.name] || []
+              const isAvailable =
+                !availableDates.length ||
+                availableDates.some((date) => new Date(date) <= new Date(selectedDate))
+
+              return (
+                <div
+                  key={service.id}
+                  className={`p-3 border rounded ${isAvailable ? "border-green-500" : "border-red-300"}`}
+                >
+                  <p className="font-semibold">{service.name}</p>
+                  <p className={isAvailable ? "text-green-600" : "text-red-600"}>
+                    {isAvailable ? "Available" : "Not Available"}
+                  </p>
+                  {isAvailable && (
+                    <button
+                      onClick={() => {
+                        // Set selected service and navigate to services section
+                        handleServiceClick(service.id)
+                        setActiveSection("services")
+                      }}
+                      className="mt-2 bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
+                    >
+                      Book Now
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <p>Please select a date to see available services.</p>
         )}
       </div>
+    </div>
+  </div>
+)}
+      </div>
 
-      <footer className="bg-[#1f2a44] text-white p-4 text-center mt-auto">
-        <p>&copy; {new Date().getFullYear()} Mastang Resort - All rights reserved</p>
+      <footer className="bg-[#1f2a44] text-white text-center p-5 mt-auto">
+        <p>&copy; {currentYear} Mastang Resort. All rights reserved.</p>
       </footer>
     </div>
   )
