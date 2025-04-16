@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import img1 from "../Img/Standard-Room.jpg"
@@ -792,7 +790,6 @@ hover:bg-gray-100
                 </tbody>
               </table>
             </div>
-
             <div className="mt-4 text-sm">
               <div className="flex items-center mb-2">
                 <div className="w-4 h-4 bg-blue-100 mr-2"></div>

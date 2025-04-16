@@ -49,7 +49,7 @@ export default function EditService() {
         if (service.image) {
           setPreviewImage(service.image);
         }
-        
+
         setServiceNotFound(false);
       } else {
         setServiceNotFound(true);
@@ -107,7 +107,7 @@ export default function EditService() {
   const generateNextRoomId = () => {
     try {
       const services = JSON.parse(localStorage.getItem("services")) || [];
-      
+
       // Extract existing room numbers
       const roomNumbers = services
         .map(s => {
@@ -116,12 +116,12 @@ export default function EditService() {
           return match ? parseInt(match[1], 10) : 0;
         })
         .filter(num => !isNaN(num));
-      
+
       // Find the highest room number or start at 3 if none exist
-      const highestNumber = roomNumbers.length > 0 
-        ? Math.max(...roomNumbers) 
+      const highestNumber = roomNumbers.length > 0
+        ? Math.max(...roomNumbers)
         : 3; // Start with room4 if no rooms exist
-      
+
       // Return the next room ID
       return `room${highestNumber + 1}`;
     } catch (error) {
@@ -135,7 +135,7 @@ export default function EditService() {
 
     try {
       const services = JSON.parse(localStorage.getItem("services")) || [];
-      
+
       if (isAddMode) {
         // Creating a new service with the room ID format
         const newId = serviceIdParam || generateNextRoomId();
@@ -147,14 +147,14 @@ export default function EditService() {
           category: formData.category,
           image: previewImage || formData.image
         };
-        
+
         services.push(newService);
         localStorage.setItem("services", JSON.stringify(services));
         alert("Service created successfully!");
       } else {
         // Updating existing service
         const index = services.findIndex(s => String(s.id) === String(serviceId));
-        
+
         if (index !== -1) {
           services[index] = {
             ...services[index],
@@ -164,14 +164,14 @@ export default function EditService() {
             category: formData.category,
             image: previewImage || formData.image
           };
-          
+
           localStorage.setItem("services", JSON.stringify(services));
           alert("Service updated successfully!");
         } else {
           alert("Service not found. Unable to update.");
         }
       }
-      
+
       navigate("/admin-dashboard");
     } catch (error) {
       console.error("Error saving service:", error);
@@ -322,13 +322,6 @@ export default function EditService() {
               className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-md transition duration-300"
             >
               {isAddMode ? "Add Service" : "Save Changes"}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/admin-dashboard")}
-              className="w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-md transition duration-300"
-            >
-              Cancel
             </button>
           </div>
         </form>
