@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XCircle, Bell, MessageSquare, Send, Maximize2, Minimize2 } from 'lucide-react';
+import { XCircle, Bell, MessageSquare, Send, Maximize2, Minimize2, Menu } from 'lucide-react';
 
 function ServiceProviderDashboard() {
   const [activeSection, setActiveSection] = useState('requests');
@@ -35,6 +35,9 @@ function ServiceProviderDashboard() {
   const [unreadMessages, setUnreadMessages] = useState({});
   const [chatNotification, setChatNotification] = useState(false);
   const [activeChatUsers, setActiveChatUsers] = useState([]);
+
+  // Mobile menu state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const currentProviderId = 2;
 
@@ -97,6 +100,11 @@ function ServiceProviderDashboard() {
   // Toggle chat expansion
   const toggleChatExpansion = () => {
     setChatExpanded(!chatExpanded);
+  };
+
+  // Toggle mobile menu
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   // Open specific chat
@@ -244,6 +252,8 @@ function ServiceProviderDashboard() {
     if (section === 'requests') {
       setNotification(false);
     }
+    // Close mobile menu after selection on mobile
+    setMobileMenuOpen(false);
   };
 
   const acceptRequest = (service) => {
@@ -475,7 +485,8 @@ function ServiceProviderDashboard() {
         Service Provider Dashboard - Mastang Resort
       </header>
 
-      <nav className="flex justify-center flex-wrap bg-[#2c3e50] p-3">
+      {/* Desktop Navigation */}
+      <nav className="lg:flex justify-center flex-wrap bg-[#2c3e50] p-3 hidden">
         <button
           onClick={() => showSection('requests')}
           className="text-white mx-2 my-1 px-4 py-2 rounded hover:bg-[#f39c12] hover:text-black text-lg relative"
@@ -503,6 +514,79 @@ function ServiceProviderDashboard() {
           Logout
         </button>
       </nav>
+
+      {/* Mobile Navigation Bar */}
+      <div className="lg:hidden bg-[#2c3e50] p-3 flex justify-between items-center">
+        <button
+          onClick={toggleMobileMenu}
+          className="text-white p-2"
+        >
+          <Menu size={24} />
+        </button>
+        <div className="text-white text-lg font-medium">
+          {activeSection === 'requests' && 'Requested Services'}
+          {activeSection === 'accepted' && 'Accepted Services'}
+          {activeSection === 'manageServices' && 'Manage Services'}
+          {activeSection === 'profile' && 'Profile Management'}
+          {activeSection === 'reviews' && 'Reviews & Ratings'}
+        </div>
+        <div className="w-8">
+          {getPendingRequestsCount() > 0 && (
+            <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+              {getPendingRequestsCount()}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-[#2c3e50] text-white shadow-md z-40">
+          <div className="flex flex-col">
+            <button
+              onClick={() => showSection('requests')}
+              className="p-4 text-left hover:bg-[#3e5871] border-b border-[#1f2a44] flex justify-between items-center"
+            >
+              <span>Requested Services</span>
+              {getPendingRequestsCount() > 0 && (
+                <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                  {getPendingRequestsCount()}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => showSection('accepted')}
+              className="p-4 text-left hover:bg-[#3e5871] border-b border-[#1f2a44]"
+            >
+              Accepted Services
+            </button>
+            <button
+              onClick={() => showSection('manageServices')}
+              className="p-4 text-left hover:bg-[#3e5871] border-b border-[#1f2a44]"
+            >
+              Manage Services
+            </button>
+            <button
+              onClick={() => showSection('profile')}
+              className="p-4 text-left hover:bg-[#3e5871] border-b border-[#1f2a44]"
+            >
+              Profile Management
+            </button>
+            <button
+              onClick={() => showSection('reviews')}
+              className="p-4 text-left hover:bg-[#3e5871] border-b border-[#1f2a44]"
+            >
+              Reviews & Ratings
+            </button>
+            <button
+              onClick={logout}
+              className="p-4 text-left hover:bg-[#3e5871]"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="w-[90%] mx-auto p-5">
         {activeSection === 'requests' && (
@@ -660,17 +744,49 @@ function ServiceProviderDashboard() {
         {/* Feedback Analytics Section */}
         <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
           <h2 className="text-center mb-5 text-xl font-semibold">Feedback Analytics</h2>
-          <p><strong>Average Rating:</strong> {feedbackAnalytics.avgRating}/5</p>
-          <div className="mt-4 flex flex-wrap">
-            {Object.entries(feedbackAnalytics.wordFreq).map(([word, freq], index) => (
-              <span
-                key={index}
-                className="mr-2 mb-2"
-                style={{ fontSize: `${12 + freq * 2}px` }}
-              >
-                {word}
-              </span>
-            ))}
+          <p><strong>Average Rating:</strong> {feedbackAnalytics.avgRating} / 5.0</p>
+
+          {/* Common feedback words */}
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold">Common Feedback Words:</h3>
+            <div className="flex flex-wrap mt-2">
+              {Object.entries(feedbackAnalytics.wordFreq)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([word, count], i) => (
+                  <span
+                    key={i}
+                    className="bg-blue-100 text-blue-800 px-2 py-1 rounded m-1"
+                  >
+                    {word} ({count})
+                  </span>
+                ))
+              }
+
+              {Object.keys(feedbackAnalytics.wordFreq).length === 0 && (
+                <p className="text-gray-500 italic">No feedback data available</p>
+              )}
+            </div>
+          </div>
+
+          {/* Recent reviews */}
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold">Recent Reviews:</h3>
+            {reviews.length > 0 ? (
+              <div className="mt-2">
+                {reviews.slice(0, 3).map((review, i) => (
+                  <div key={i} className="border-b pb-2 mb-2">
+                    <div className="flex justify-between">
+                      <p className="font-medium">{review.user}</p>
+                      <p className="text-yellow-500">{"★".repeat(review.rating)}</p>
+                    </div>
+                    <p className="text-gray-600">{review.comment}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 italic">No reviews available</p>
+            )}
           </div>
         </div>
 
@@ -684,12 +800,12 @@ function ServiceProviderDashboard() {
                     <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Service</th>
                     <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">User</th>
                     <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Days</th>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Status</th>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Mark Completed</th>
+                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {getFilteredBookings()
+                  {bookings
+                    .filter(booking => booking.status === 'accepted')
                     .map((booking, index) => (
                       <tr key={index}>
                         <td className="border border-gray-300 p-2 text-center">{booking.service}</td>
@@ -709,18 +825,21 @@ function ServiceProviderDashboard() {
                           </button>
                         </td>
                         <td className="border border-gray-300 p-2 text-center">{booking.days}</td>
-                        <td className="border border-gray-300 p-2 text-center">{booking.status || 'upcoming'}</td>
                         <td className="border border-gray-300 p-2 text-center">
                           <button
                             onClick={() => markCompleted(booking.service)}
-                            className={`bg-blue-600 text-white p-2 rounded hover:bg-blue-700 w-full ${booking.status === 'completed' || booking.status === 'rejected' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            disabled={booking.status === 'completed' || booking.status === 'rejected'}
+                            className="bg-purple-600 text-white p-2 rounded m-1 hover:bg-purple-700 w-full"
                           >
-                            Mark Completed
+                            Mark as Completed
                           </button>
                         </td>
                       </tr>
                     ))}
+                  {bookings.filter(booking => booking.status === 'accepted').length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="border border-gray-300 p-2 text-center">No accepted services found.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -730,104 +849,119 @@ function ServiceProviderDashboard() {
         {activeSection === 'manageServices' && (
           <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
             <h2 className="text-center mb-5 text-xl font-semibold">Manage Services</h2>
-
-            <div>
-              <h3 className="font-semibold mb-2">Add New Service:</h3>
-              <form onSubmit={addService} className="mb-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block mb-1">Service Name:</label>
-                    <input
-                      type="text"
-                      name="serviceName"
-                      value={newService.serviceName}
-                      onChange={(e) => handleInputChange(e, setNewService, newService)}
-                      className="w-full p-2 border border-gray-300 rounded"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-1">Service Cost ($):</label>
-                    <input
-                      type="number"
-                      name="serviceCost"
-                      value={newService.serviceCost}
-                      onChange={(e) => handleInputChange(e, setNewService, newService)}
-                      className="w-full p-2 border border-gray-300 rounded"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-1">Category:</label>
-                    <input
-                      type="text"
-                      name="serviceCategory"
-                      value={newService.serviceCategory}
-                      onChange={(e) => handleInputChange(e, setNewService, newService)}
-                      className="w-full p-2 border border-gray-300 rounded"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-1">Sub-Category:</label>
-                    <input
-                      type="text"
-                      name="serviceSubCategory"
-                      value={newService.serviceSubCategory}
-                      onChange={(e) => handleInputChange(e, setNewService, newService)}
-                      className="w-full p-2 border border-gray-300 rounded"
-                    />
-                  </div>
-                </div>
-                <div className="mb-4">
-                  <label className="block mb-1">Description:</label>
-                  <textarea
-                    name="serviceDesc"
-                    value={newService.serviceDesc}
+            <form onSubmit={addService} className="mb-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1">Service Name:</label>
+                  <input
+                    type="text"
+                    name="serviceName"
+                    placeholder="Kayaking, Boat Tours, etc."
+                    className="w-full p-3 border border-gray-300 rounded"
+                    value={newService.serviceName}
                     onChange={(e) => handleInputChange(e, setNewService, newService)}
-                    className="w-full p-2 border border-gray-300 rounded"
-                    rows="3"
                     required
-                  ></textarea>
+                  />
                 </div>
-                <button
-                  type="submit"
-                  className="w-full p-3 bg-green-600 text-white rounded hover:bg-green-700"
-                >
-                  Add Service
-                </button>
-              </form>
+                <div>
+                  <label className="block mb-1">Cost (USD):</label>
+                  <input
+                    type="number"
+                    name="serviceCost"
+                    placeholder="Enter price in USD"
+                    className="w-full p-3 border border-gray-300 rounded"
+                    value={newService.serviceCost}
+                    onChange={(e) => handleInputChange(e, setNewService, newService)}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="mt-4">
+                <label className="block mb-1">Description:</label>
+                <textarea
+                  name="serviceDesc"
+                  placeholder="Describe your service in detail"
+                  className="w-full p-3 border border-gray-300 rounded"
+                  rows="3"
+                  value={newService.serviceDesc}
+                  onChange={(e) => handleInputChange(e, setNewService, newService)}
+                  required
+                ></textarea>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className="block mb-1">Category:</label>
+                  <select
+                    name="serviceCategory"
+                    className="w-full p-3 border border-gray-300 rounded"
+                    value={newService.serviceCategory}
+                    onChange={(e) => handleInputChange(e, setNewService, newService)}
+                    required
+                  >
+                    <option value="">Select Category</option>
+                    <option value="water">Water Sports</option>
+                    <option value="adventure">Adventure</option>
+                    <option value="relaxation">Relaxation</option>
+                    <option value="tour">Tours</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1">Sub-category:</label>
+                  <input
+                    type="text"
+                    name="serviceSubCategory"
+                    placeholder="Sub-category name"
+                    className="w-full p-3 border border-gray-300 rounded"
+                    value={newService.serviceSubCategory}
+                    onChange={(e) => handleInputChange(e, setNewService, newService)}
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="w-full mt-4 p-3 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Add New Service
+              </button>
+            </form>
 
-              <h3 className="font-semibold mb-2 mt-6">Your Services:</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Name</th>
-                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Cost</th>
-                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Category</th>
-                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {services.filter(s => s.providerId === currentProviderId).map((service, index) => (
+            <h3 className="text-lg font-semibold mb-2">Current Services</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Name</th>
+                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Description</th>
+                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Cost</th>
+                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {services
+                    .filter(service => service.providerId === currentProviderId)
+                    .map((service, index) => (
                       <tr key={index}>
-                        <td className="border border-gray-300 p-2 text-center">{service.name}</td>
-                        <td className="border border-gray-300 p-2 text-center">${service.cost}</td>
-                        <td className="border border-gray-300 p-2 text-center">{service.category}</td>
+                        <td className="border border-gray-300 p-2">{service.name}</td>
+                        <td className="border border-gray-300 p-2">{service.description}</td>
+                        <td className="border border-gray-300 p-2">${service.cost}</td>
                         <td className="border border-gray-300 p-2 text-center">
                           <button
                             onClick={() => deleteService(service.id)}
-                            className="bg-red-600 text-white p-2 rounded hover:bg-red-700"
+                            className="bg-red-600 text-white p-2 rounded m-1 hover:bg-red-700"
                           >
                             Delete
                           </button>
                         </td>
                       </tr>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  {services.filter(service => service.providerId === currentProviderId).length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="border border-gray-300 p-2 text-center">No services added yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -835,49 +969,69 @@ function ServiceProviderDashboard() {
         {activeSection === 'profile' && (
           <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
             <h2 className="text-center mb-5 text-xl font-semibold">Profile Management</h2>
-
             <form onSubmit={updateProfile}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block mb-1">Name:</label>
+              <div className="md:flex md:items-center mb-4">
+                <div className="md:w-1/3">
+                  <label className="block font-bold md:text-right mb-1 md:mb-0 pr-4">
+                    Display Name
+                  </label>
+                </div>
+                <div className="md:w-2/3">
                   <input
                     type="text"
                     name="providerName"
+                    placeholder="Your Display Name"
+                    className="w-full p-3 border border-gray-300 rounded"
                     value={profile.providerName}
                     onChange={(e) => handleInputChange(e, setProfile, profile)}
-                    className="w-full p-2 border border-gray-300 rounded"
-                    placeholder="Your Name"
                   />
                 </div>
-                <div>
-                  <label className="block mb-1">Email:</label>
+              </div>
+              <div className="md:flex md:items-center mb-4">
+                <div className="md:w-1/3">
+                  <label className="block font-bold md:text-right mb-1 md:mb-0 pr-4">
+                    Email
+                  </label>
+                </div>
+                <div className="md:w-2/3">
                   <input
                     type="email"
                     name="providerEmail"
+                    placeholder="your.email@example.com"
+                    className="w-full p-3 border border-gray-300 rounded"
                     value={profile.providerEmail}
                     onChange={(e) => handleInputChange(e, setProfile, profile)}
-                    className="w-full p-2 border border-gray-300 rounded"
-                    placeholder="your.email@example.com"
                   />
                 </div>
               </div>
-              <div className="mb-4">
-                <label className="block mb-1">Expertise/Bio:</label>
-                <textarea
-                  name="providerExpertise"
-                  value={profile.providerExpertise}
-                  onChange={(e) => handleInputChange(e, setProfile, profile)}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  rows="4"
-                  placeholder="Describe your expertise and experience..."
-                ></textarea>
+              <div className="md:flex md:items-center mb-4">
+                <div className="md:w-1/3">
+                  <label className="block font-bold md:text-right mb-1 md:mb-0 pr-4">
+                    Expertise
+                  </label>
+                </div>
+                <div className="md:w-2/3">
+                  <textarea
+                    name="providerExpertise"
+                    placeholder="Describe your expertise and experience"
+                    className="w-full p-3 border border-gray-300 rounded"
+                    rows="4"
+                    value={profile.providerExpertise}
+                    onChange={(e) => handleInputChange(e, setProfile, profile)}
+                  ></textarea>
+                </div>
               </div>
-              <button
-                type="submit"
-                className="w-full p-3 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Update Profile
-              </button>
+              <div className="md:flex md:items-center">
+                <div className="md:w-1/3"></div>
+                <div className="md:w-2/3">
+                  <button
+                    type="submit"
+                    className="w-full p-3 bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    Update Profile
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         )}
@@ -885,146 +1039,152 @@ function ServiceProviderDashboard() {
         {activeSection === 'reviews' && (
           <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
             <h2 className="text-center mb-5 text-xl font-semibold">Reviews & Ratings</h2>
-
-            <div className="mb-5">
-              <div className="text-center p-4 bg-gray-100 rounded mb-4">
-                <h3 className="text-lg font-semibold">Overall Rating</h3>
-                <div className="text-3xl font-bold text-yellow-500">{feedbackAnalytics.avgRating}/5</div>
-                <p className="text-sm text-gray-600">Based on {reviews.length} reviews</p>
-              </div>
-
-              <h3 className="font-semibold mb-2">Recent Reviews:</h3>
-              <div className="space-y-4">
-                {reviews.length > 0 ? (
-                  reviews.map((review, index) => (
-                    <div key={index} className="p-3 border border-gray-200 rounded">
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="font-semibold">{review.user}</div>
-                        <div className="text-yellow-500">{review.rating}/5 stars</div>
-                      </div>
-                      <p className="text-gray-700">{review.comment}</p>
-                      <div className="text-xs text-gray-500 mt-2">For: {review.service}</div>
+            {reviews.length > 0 ? (
+              <div>
+                {reviews.map((review, index) => (
+                  <div key={index} className="mb-4 p-4 border-b">
+                    <div className="flex justify-between">
+                      <h3 className="font-semibold">{review.user}</h3>
+                      <div className="text-yellow-500">{"★".repeat(review.rating)}</div>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-center text-gray-500">No reviews yet.</p>
-                )}
+                    <p className="text-gray-700 mt-2">{review.comment}</p>
+                    <p className="text-gray-500 text-sm mt-2">Service: {review.service}</p>
+                  </div>
+                ))}
               </div>
-            </div>
+            ) : (
+              <p className="text-center text-gray-500">No reviews yet.</p>
+            )}
           </div>
         )}
       </div>
 
-      {/* Chat Widget */}
-      <div className={`fixed bottom-5 right-5 z-50 ${chatOpen ? 'block' : 'block'}`}>
-        {/* Chat Toggle Button */}
+      {/* Chat Feature */}
+      <div className={`fixed bottom-5 right-5 z-40 flex flex-col ${chatExpanded ? 'w-96 h-96' : 'w-64 h-64'}`}>
+        {/* Chat button */}
         <button
           onClick={toggleChat}
-          className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg flex items-center justify-center relative"
+          className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg ml-auto flex items-center"
         >
           <MessageSquare size={24} />
-          {getTotalUnreadCount() > 0 && !chatOpen && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+          {getTotalUnreadCount() > 0 && (
+            <span className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs absolute -top-1 -right-1">
               {getTotalUnreadCount()}
             </span>
           )}
         </button>
 
-        {/* Chat Window */}
+        {/* Chat window */}
         {chatOpen && (
-          <div
-            className={`bg-white rounded-lg shadow-xl overflow-hidden absolute bottom-16 right-0 transition-all duration-300 ease-in-out ${chatExpanded ? 'w-96 h-96' : 'w-80 h-80'
-              }`}
-          >
-            {/* Chat Header */}
+          <div className="bg-white rounded-lg shadow-lg mt-2 flex flex-col h-full border border-gray-300 overflow-hidden">
+            {/* Chat header */}
+
             <div className="bg-blue-600 text-white p-3 flex justify-between items-center">
-              <div className="flex items-center">
-                {activeChat && (
-                  <button
-                    onClick={() => setActiveChat(null)}
-                    className="mr-2 text-white hover:text-gray-200"
-                  >
-                    ← Back
-                  </button>
-                )}
-                <h3 className="font-semibold">
-                  {activeChat ? `Chat with ${getUserDisplayName(activeChat)}` : 'Customer Chat'}
-                </h3>
-              </div>
-              <div className="flex items-center">
-                <button onClick={toggleChatExpansion} className="mr-2 text-white hover:text-gray-200">
+              <span className="font-semibold">
+                {activeChat ? getUserDisplayName(activeChat) : 'Chat Messages'}
+              </span>
+              <div className="flex">
+                <button onClick={toggleChatExpansion} className="text-white mr-2">
                   {chatExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
                 </button>
-                <button onClick={toggleChat} className="text-white hover:text-gray-200">
+                <button onClick={toggleChat} className="text-white">
                   <XCircle size={18} />
                 </button>
               </div>
             </div>
 
-            {/* Chat Sidebar (When No Chat is Selected) */}
-            {!activeChat && (
-              <div className="h-full overflow-y-auto p-2">
-                <h4 className="text-sm font-semibold text-gray-600 mb-2 px-2">Active Conversations</h4>
-                {activeChatUsers.map((userId) => (
-                  <div
-                    key={userId}
-                    onClick={() => openChat(userId)}
-                    className="flex items-center justify-between p-2 hover:bg-gray-100 rounded cursor-pointer"
-                  >
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-2">
-                        {getUserDisplayName(userId).charAt(0)}
-                      </div>
-                      <span>{getUserDisplayName(userId)}</span>
-                    </div>
-                    {unreadMessages[userId] && (
-                      <span className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                        {unreadMessages[userId]}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Chat Messages */}
-            {activeChat && (
-              <>
-                <div className="h-[calc(100%-96px)] overflow-y-auto p-3">
-                  {conversations[activeChat] && conversations[activeChat].map((msg, index) => (
+            {/* Chat content */}
+            <div className="flex h-full">
+              {/* User list sidebar */}
+              {!activeChat && (
+                <div className="w-full h-full overflow-y-scroll border-r border-gray-200">
+                  {activeChatUsers.map((userId) => (
                     <div
-                      key={index}
-                      className={`mb-2 max-w-[75%] ${msg.sender === 'provider'
-                          ? 'ml-auto bg-blue-500 text-white rounded-tl-lg rounded-tr-lg rounded-bl-lg'
-                          : 'mr-auto bg-gray-200 text-gray-800 rounded-tr-lg rounded-tl-lg rounded-br-lg'
-                        } p-2 rounded-lg`}
+                      key={userId}
+                      onClick={() => openChat(userId)}
+                      className="p-3 border-b border-gray-200 hover:bg-gray-100 cursor-pointer flex justify-between items-center"
                     >
-                      <p>{msg.message}</p>
-                      <div className={`text-xs mt-1 ${msg.sender === 'provider' ? 'text-blue-100' : 'text-gray-500'}`}>
-                        {msg.timestamp}
+                      <div>
+                        <div className="font-medium">{getUserDisplayName(userId)}</div>
+                        <div className="text-sm text-gray-500 truncate">
+                          {conversations[userId] && conversations[userId].length > 0
+                            ? conversations[userId][conversations[userId].length - 1].message.substring(0, 30) +
+                            (conversations[userId][conversations[userId].length - 1].message.length > 30 ? '...' : '')
+                            : 'No messages yet'}
+                        </div>
                       </div>
+                      {unreadMessages[userId] && (
+                        <span className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                          {unreadMessages[userId]}
+                        </span>
+                      )}
                     </div>
                   ))}
-                </div>
 
-                {/* Chat Input */}
-                <form onSubmit={sendMessage} className="p-3 border-t border-gray-200 flex">
-                  <input
-                    type="text"
-                    value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
-                    placeholder="Type a message..."
-                    className="flex-1 p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:border-blue-500"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-blue-600 text-white p-2 rounded-r-lg hover:bg-blue-700"
-                  >
-                    <Send size={20} />
-                  </button>
-                </form>
-              </>
-            )}
+                  {activeChatUsers.length === 0 && (
+                    <div className="p-4 text-center text-gray-500">
+                      No active conversations
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Messages */}
+              {activeChat && (
+                <div className="flex flex-col h-full w-full">
+                  {/* Back button */}
+                  <div className="border-t border-gray-200 p-2">
+                    <button
+                      onClick={() => setActiveChat(null)}
+                      className="text-blue-600 hover:underline text-sm"
+                    >
+                      ← Back
+                    </button>
+                  </div>
+                  <div className="flex-1 p-3 overflow-y-auto">
+                    {conversations[activeChat] && conversations[activeChat].map((msg, i) => (
+                      <div
+                        key={i}
+                        className={`mb-2 max-w-3/4 ${msg.sender === 'provider'
+                          ? 'ml-auto bg-blue-100 rounded-lg p-2'
+                          : 'mr-auto bg-gray-100 rounded-lg p-2'}`}
+                      >
+                        <div className="text-sm">
+                          {msg.message}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1 text-right">
+                          {msg.timestamp}
+                        </div>
+                      </div>
+                    ))}
+
+                    {(!conversations[activeChat] || conversations[activeChat].length === 0) && (
+                      <div className="text-center text-gray-500 mt-4">
+                        No messages yet. Start the conversation!
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Message input */}
+                  <form onSubmit={sendMessage} className="border-t border-gray-200 p-2 flex">
+                    <input
+                      type="text"
+                      value={messageInput}
+                      onChange={(e) => setMessageInput(e.target.value)}
+                      placeholder="Type a message..."
+                      className="flex-1 p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:border-blue-500"
+                    />
+                    <button
+                      type="submit"
+                      className="bg-blue-600 text-white p-2 rounded-r-lg hover:bg-blue-700"
+                    >
+                      <Send size={20} />
+                    </button>
+                  </form>
+
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

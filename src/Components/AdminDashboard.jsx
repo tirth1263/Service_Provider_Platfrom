@@ -165,6 +165,10 @@ const AdminDashboard = () => {
     navigate(`/edit-service?id=${serviceId}`);
   };
 
+  const handleAddNewService = () => {
+    navigate('/edit-service');
+  };
+
   // Export functionality
   const exportToJSON = (data, filename) => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -182,18 +186,21 @@ const AdminDashboard = () => {
     exportToJSON(services, 'services_list.json');
   };
 
-  // Dynamically generate classes based on theme
-  const bgColor = darkMode ? 'bg-gray-900' : 'bg-gray-100';
+  // Dynamically generate classes based on theme with emerald colors
+  const bgColor = darkMode ? 'bg-gray-900' : 'bg-emerald-50';
   const textColor = darkMode ? 'text-white' : 'text-gray-800';
   const cardBg = darkMode ? 'bg-gray-800' : 'bg-white';
-  const headerBg = darkMode ? 'bg-gray-800' : 'bg-[#1f2a44]';
-  const tableBg = darkMode ? 'bg-gray-700' : 'bg-[#2c3e50]';
+  const headerBg = darkMode ? 'bg-emerald-900' : 'bg-emerald-800';
+  const tableBg = darkMode ? 'bg-emerald-900' : 'bg-emerald-700';
   const tableHeaderText = 'text-white';
   const tableBodyBg = darkMode ? 'bg-gray-800' : 'bg-white';
-  const tableBorder = darkMode ? 'border-gray-700' : 'border-gray-300';
+  const tableBorder = darkMode ? 'border-gray-700' : 'border-emerald-200';
   const inputBg = darkMode ? 'bg-gray-700' : 'bg-white';
   const inputText = darkMode ? 'text-white' : 'text-gray-800';
-  const inputBorder = darkMode ? 'border-gray-600' : 'border-gray-300';
+  const inputBorder = darkMode ? 'border-gray-600' : 'border-emerald-300';
+  const buttonBg = darkMode ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-emerald-600 hover:bg-emerald-700';
+  const deleteButtonBg = darkMode ? 'bg-red-700 hover:bg-red-800' : 'bg-red-600 hover:bg-red-700';
+  const editButtonBg = darkMode ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-emerald-500 hover:bg-emerald-600';
 
   return (
     <div className={`font-['Poppins',sans-serif] ${bgColor} ${textColor} min-h-screen`}>
@@ -201,7 +208,7 @@ const AdminDashboard = () => {
         <div className="absolute right-4 top-4">
           <button 
             onClick={toggleTheme} 
-            className="p-2 rounded-full hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-full hover:bg-emerald-700 transition-colors"
             aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
           >
             {darkMode ? (
@@ -228,7 +235,7 @@ const AdminDashboard = () => {
           <input
             type="text"
             placeholder="Search by name, email or role"
-            className={`w-full p-2 ${inputBg} ${inputText} border ${inputBorder} rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            className={`w-full p-2 ${inputBg} ${inputText} border ${inputBorder} rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
             value={userSearchTerm}
             onChange={(e) => setUserSearchTerm(e.target.value)}
           />
@@ -257,7 +264,7 @@ const AdminDashboard = () => {
                       <td className={`border ${tableBorder} p-2 text-center`}>
                         <button
                           onClick={() => deleteUser(user.id)}
-                          className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded"
+                          className={`${deleteButtonBg} text-white py-1 px-3 rounded`}
                         >
                           Delete
                         </button>
@@ -278,7 +285,7 @@ const AdminDashboard = () => {
           <div className="flex justify-end mt-4">
             <button
               onClick={handleExportUsers}
-              className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
+              className={`${buttonBg} text-white py-2 px-4 rounded`}
             >
               Export Users to JSON
             </button>
@@ -289,60 +296,11 @@ const AdminDashboard = () => {
         <h2 className="text-center text-2xl font-semibold mb-4">Service Management</h2>
 
         <div className={`${cardBg} p-5 rounded-lg shadow-md mb-6`}>
-          <h3 className="text-xl font-medium mb-3">Add Service</h3>
-          <form onSubmit={addService}>
-            <input
-              type="text"
-              name="name"
-              placeholder="Service Name"
-              required
-              className={`w-full p-3 ${inputBg} ${inputText} border ${inputBorder} rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 mb-3`}
-              value={formData.name}
-              onChange={handleInputChange}
-            />
-
-            <input
-              type="text"
-              name="description"
-              placeholder="Description"
-              required
-              className={`w-full p-2 ${inputBg} ${inputText} border ${inputBorder} rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-green-500`}
-              value={formData.description}
-              onChange={handleInputChange}
-            />
-            <input
-              type="number"
-              name="cost"
-              placeholder="Cost"
-              required
-              className={`w-full p-2 ${inputBg} ${inputText} border ${inputBorder} rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-green-500`}
-              value={formData.cost}
-              onChange={handleInputChange}
-            />
-            <input
-              type="text"
-              name="category"
-              placeholder="Category"
-              required
-              className={`w-full p-2 ${inputBg} ${inputText} border ${inputBorder} rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-green-500`}
-              value={formData.category}
-              onChange={handleInputChange}
-            />
-            <button
-              type="submit"
-              className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded-md cursor-pointer"
-            >
-              Add Service
-            </button>
-          </form>
-        </div>
-
-        <div className={`${cardBg} p-5 rounded-lg shadow-md mb-6`}>
           <h3 className="text-xl font-medium mb-3">Service List</h3>
           <input
             type="text"
             placeholder="Search by name, category, or cost"
-            className={`w-full p-2 ${inputBg} ${inputText} border ${inputBorder} rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            className={`w-full p-2 ${inputBg} ${inputText} border ${inputBorder} rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
             value={serviceSearchTerm}
             onChange={(e) => setServiceSearchTerm(e.target.value)}
           />
@@ -371,13 +329,13 @@ const AdminDashboard = () => {
                       <div className="flex flex-col sm:flex-row justify-center gap-2">
                         <button
                           onClick={() => handleEditService(service.id)}
-                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
+                          className={`${editButtonBg} text-white px-4 py-2 rounded-md`}
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => deleteService(service.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+                          className={`${deleteButtonBg} text-white px-4 py-2 rounded-md`}
                         >
                           Delete
                         </button>
@@ -389,12 +347,20 @@ const AdminDashboard = () => {
             </table>
           </div>
 
-          <button
-            onClick={handleExportServices}
-            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded mt-4"
-          >
-            Export Services to JSON
-          </button>
+          <div className="flex flex-col sm:flex-row justify-between gap-3 mt-4">
+            <button
+              onClick={handleAddNewService}
+              className={`${editButtonBg} text-white py-2 px-4 rounded`}
+            >
+              Add Service
+            </button>
+            <button
+              onClick={handleExportServices}
+              className={`${buttonBg} text-white py-2 px-4 rounded`}
+            >
+              Export Services to JSON
+            </button>
+          </div>
         </div>
       </div>
     </div>

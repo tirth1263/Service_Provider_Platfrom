@@ -51,44 +51,57 @@ const Login = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 font-poppins px-4">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-center text-xl font-semibold text-gray-800 mb-6">Login</h2>
-        <form onSubmit={loginUser}>
-          <input
-            type="text"
-            placeholder="Your Name"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full p-3 mb-4 border border-gray-300 rounded-lg"
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 mb-4 border border-gray-300 rounded-lg"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 mb-4 border border-gray-300 rounded-lg"
-          />
-          <button
-            type="submit"
-            className="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-          >
-            Login
-          </button>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 font-poppins px-4 py-6 sm:px-6 md:px-8">
+      <div className="bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-lg w-full max-w-md mx-auto">
+        <h2 className="text-center text-lg sm:text-xl md:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6">Login</h2>
+        <form onSubmit={loginUser} className="space-y-3 sm:space-y-4">
+          <div>
+            <input
+              type="text"
+              placeholder="Your Name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none transition"
+            />
+          </div>
+          <div>
+            <input
+              type="email"
+              placeholder="Email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none transition"
+            />
+          </div>
+          <div>
+            <input
+              type="password"
+              placeholder="Password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none transition"
+            />
+          </div>
+          <div className="pt-2">
+            <button
+              type="submit"
+              className="w-full p-2 sm:p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:ring-2 focus:ring-green-400 focus:outline-none transition"
+            >
+              Login
+            </button>
+          </div>
         </form>
-        <div className="text-center mt-4">
-          <Link to="/register" className="text-gray-700 hover:text-gray-900">
+        <div className="text-center mt-4 sm:mt-6">
+          <Link to="/register" className="text-gray-700 hover:text-gray-900 text-sm sm:text-base">
             Don't have an account? Register
+          </Link>
+        </div>
+        <div className="text-center mt-2 sm:mt-3">
+          <Link to="/forgot-password" className="text-sm text-gray-500 hover:text-gray-700">
+            Forgot your password?
           </Link>
         </div>
       </div>

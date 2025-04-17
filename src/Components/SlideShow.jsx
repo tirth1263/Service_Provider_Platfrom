@@ -4,7 +4,7 @@ import slider2 from '../Img/slider-2.jpg';
 import slider3 from '../Img/slider-3.jpg';
 import slider4 from '../Img/slider-3.jpg';
 
-const slides = [slider1, slider2, slider3,slider4];
+const slides = [slider1, slider2, slider3, slider4];
 
 const Slideshow = () => {
   const [index, setIndex] = useState(0);
@@ -19,7 +19,7 @@ const Slideshow = () => {
 
   return (
     <div className="relative w-full overflow-hidden">
-      <div className="relative h-[300px] md:h-[500px] w-full">
+      <div className="relative h-48 sm:h-64 md:h-96 lg:h-120 w-full">
         {slides.map((src, i) => (
           <img
             key={i}
@@ -36,14 +36,14 @@ const Slideshow = () => {
       <button
         onClick={prevSlide}
         aria-label="Previous Slide"
-        className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-2 rounded-full text-xl z-20 cursor-pointer"
+        className="absolute top-1/2 left-2 sm:left-4 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-1 sm:p-2 rounded-full text-base sm:text-xl z-20 cursor-pointer"
       >
         &#10094;
       </button>
       <button
         onClick={nextSlide}
         aria-label="Next Slide"
-        className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-2 rounded-full text-xl z-20 cursor-pointer"
+        className="absolute top-1/2 right-2 sm:right-4 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-1 sm:p-2 rounded-full text-base sm:text-xl z-20 cursor-pointer"
       >
         &#10095;
       </button>

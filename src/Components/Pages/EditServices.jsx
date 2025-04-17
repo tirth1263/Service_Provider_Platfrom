@@ -179,11 +179,15 @@ export default function EditService() {
     }
   };
 
+  const handleBack = () => {
+    navigate("/admin-dashboard");
+  };
+
   if (isLoading) {
     return (
-      <div className="bg-gray-100 min-h-screen py-8 px-4 flex items-center justify-center">
-        <div className="max-w-xl mx-auto bg-white rounded-lg shadow-md p-6 md:p-8 text-center">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Loading...</h2>
+      <div className="bg-emerald-50 min-h-screen py-8 px-4 flex items-center justify-center">
+        <div className="w-full max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8 text-center">
+          <h2 className="text-2xl font-semibold mb-4 text-emerald-800">Loading...</h2>
         </div>
       </div>
     );
@@ -191,13 +195,13 @@ export default function EditService() {
 
   if (!isAddMode && serviceNotFound) {
     return (
-      <div className="bg-gray-100 min-h-screen py-8 px-4">
-        <div className="max-w-xl mx-auto bg-white rounded-lg shadow-md p-6 md:p-8 text-center">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Service Not Found</h2>
-          <p className="mb-6">The service you are trying to edit could not be found.</p>
+      <div className="bg-emerald-50 min-h-screen py-8 px-4 flex items-center justify-center">
+        <div className="w-full max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8 text-center">
+          <h2 className="text-2xl font-semibold mb-4 text-emerald-800">Service Not Found</h2>
+          <p className="mb-6 text-gray-700">The service you are trying to edit could not be found.</p>
           <button
             onClick={() => navigate("/admin-dashboard")}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-300"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300"
           >
             Return to Dashboard
           </button>
@@ -207,124 +211,152 @@ export default function EditService() {
   }
 
   return (
-    <div className="bg-gray-100 min-h-screen py-8 px-4">
-      <div className="max-w-xl mx-auto bg-white rounded-lg shadow-md p-6 md:p-8">
-        <h2 className="text-2xl font-semibold text-center mb-6 text-gray-800">
-          {isAddMode ? "Add New Service" : "Edit Service Details"}
-        </h2>
-
-        <form onSubmit={saveService} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Service Name:
-            </label>
-            <input
-              type="text"
-              id="name"
-              placeholder="Service Name"
-              required
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              value={formData.name}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Description:
-            </label>
-            <input
-              type="text"
-              id="description"
-              placeholder="Description"
-              required
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              value={formData.description}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-1">
-              Cost:
-            </label>
-            <input
-              type="number"
-              id="cost"
-              placeholder="Cost"
-              required
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              value={formData.cost}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-              Category:
-            </label>
-            <input
-              type="text"
-              id="category"
-              placeholder="Category"
-              required
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              value={formData.category}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
-              Image URL:
-            </label>
-            <input
-              type="url"
-              id="image"
-              placeholder="Paste image URL"
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              value={formData.image && formData.image.startsWith('http') ? formData.image : ''}
-              onChange={handleImageUrlChange}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="img-upload" className="block text-sm font-medium text-gray-700 mb-1">
-              Or Upload New Image:
-            </label>
-            <input
-              type="file"
-              id="img-upload"
-              accept="image/*"
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              onChange={handleImageUpload}
-            />
-          </div>
-
-          <div className="mt-4">
-            {previewImage ? (
-              <img
-                id="preview-img"
-                src={previewImage}
-                alt="Service Image Preview"
-                className="max-h-64 max-w-full mx-auto rounded-lg object-cover"
-              />
-            ) : (
-              <div className="h-64 w-full flex items-center justify-center bg-gray-100 rounded-lg">
-                <p className="text-gray-500">No image preview available</p>
+    <div className="bg-emerald-50 min-h-screen flex flex-col py-6 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-6xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-emerald-800 py-4 px-6 relative">
+          {/* Back button positioned at the left side of header */}
+          <button 
+            onClick={handleBack}
+            className="absolute left-6 top-1/2 transform -translate-y-1/2 flex items-center text-white hover:text-emerald-200 font-medium transition duration-300"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+            <span className="hidden sm:inline">Back</span>
+          </button>
+          
+          <h2 className="text-2xl md:text-3xl font-bold text-center text-white">
+            {isAddMode ? "Add New Service" : "Edit Service Details"}
+          </h2>
+        </div>
+        
+        <div className="p-4 sm:p-6 md:p-8 lg:p-10">
+          <form onSubmit={saveService} className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Service Name:
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  placeholder="Service Name"
+                  required
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50"
+                  value={formData.name}
+                  onChange={handleChange}
+                />
               </div>
-            )}
-          </div>
 
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-md transition duration-300"
-            >
-              {isAddMode ? "Add Service" : "Save Changes"}
-            </button>
-          </div>
-        </form>
+              <div>
+                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                  Category:
+                </label>
+                <input
+                  type="text"
+                  id="category"
+                  placeholder="Category"
+                  required
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50"
+                  value={formData.category}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                Description:
+              </label>
+              <textarea
+                id="description"
+                placeholder="Description"
+                required
+                rows="3"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50"
+                value={formData.description}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-1">
+                  Cost:
+                </label>
+                <input
+                  type="number"
+                  id="cost"
+                  placeholder="Cost"
+                  required
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50"
+                  value={formData.cost}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
+                  Image URL:
+                </label>
+                <input
+                  type="url"
+                  id="image"
+                  placeholder="Paste image URL"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50"
+                  value={formData.image && formData.image.startsWith('http') ? formData.image : ''}
+                  onChange={handleImageUrlChange}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="img-upload" className="block text-sm font-medium text-gray-700 mb-1">
+                Or Upload New Image:
+              </label>
+              <input
+                type="file"
+                id="img-upload"
+                accept="image/*"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50"
+                onChange={handleImageUpload}
+              />
+            </div>
+
+            <div className="mt-6">
+              {previewImage ? (
+                <div className="relative">
+                  <img
+                    id="preview-img"
+                    src={previewImage}
+                    alt="Service Image Preview"
+                    className="h-64 w-full mx-auto rounded-lg object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="h-64 w-full flex items-center justify-center bg-gray-100 rounded-lg border border-dashed border-gray-300">
+                  <p className="text-gray-500">No image preview available</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <button
+                type="button"
+                onClick={handleBack}
+                className="w-full sm:w-1/2 bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-lg transition duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="w-full sm:w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-4 rounded-lg transition duration-300"
+              >
+                {isAddMode ? "Add Service" : "Save Changes"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
