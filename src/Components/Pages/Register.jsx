@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -12,13 +14,13 @@ const Register = () => {
     event.preventDefault();
 
     if (!name.trim()) {
-      alert('Please enter your name to continue');
+      toast.error('Please enter your name to continue');
       return;
     }
 
     // Admin email restriction
     if (email === 'tirth.rank@gmail.com') {
-      alert('This email is reserved for admin!');
+      toast.error('This email is reserved');
       return;
     }
 
@@ -29,7 +31,7 @@ const Register = () => {
     // Check if email already exists
     if (emailExists && passwordExists) {
       // If both email and password exist, show error message
-      alert('This password is already in use. Please choose a different password.');
+      toast.warn('This password is already in use. Please choose a different password.');
       return;
     }
 
@@ -39,15 +41,15 @@ const Register = () => {
       const updatedUsers = users.filter(u => u.email !== email);
       updatedUsers.push({ name, email, password, role });
       localStorage.setItem('users', JSON.stringify(updatedUsers));
-      
-      alert('Your account has been updated with new information. Please login.');
+
+      toast.warn('Your account has been updated with new information. Please login.');
       navigate('/login');
       return;
     }
 
     // Check if password already exists with different email
     if (passwordExists) {
-      alert('This password is already in use by another account. Please choose a different password.');
+      toast.error('This password is already in use by another account. Please choose a different password.');
       return;
     }
 
@@ -55,7 +57,7 @@ const Register = () => {
     users.push({ name, email, password, role });
     localStorage.setItem('users', JSON.stringify(users));
 
-    alert('Registration successful! Please login.');
+    toast.success('Registration successful! Please login.');
     navigate('/login');
   };
 
@@ -121,6 +123,19 @@ const Register = () => {
           </Link>
         </div>
       </div>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+
     </div>
   );
 };

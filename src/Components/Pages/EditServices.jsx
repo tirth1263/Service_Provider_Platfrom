@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function EditService() {
   const [searchParams] = useSearchParams();
@@ -150,7 +152,7 @@ export default function EditService() {
 
         services.push(newService);
         localStorage.setItem("services", JSON.stringify(services));
-        alert("Service created successfully!");
+        toast.success("Service created successfully!");
       } else {
         // Updating existing service
         const index = services.findIndex(s => String(s.id) === String(serviceId));
@@ -166,16 +168,16 @@ export default function EditService() {
           };
 
           localStorage.setItem("services", JSON.stringify(services));
-          alert("Service updated successfully!");
+          toast.success("Service updated successfully!");
         } else {
-          alert("Service not found. Unable to update.");
+          toast.error("Service not found. Unable to update.");
         }
       }
 
       navigate("/admin-dashboard");
     } catch (error) {
       console.error("Error saving service:", error);
-      alert("An error occurred while saving the service.");
+      toast.warn("An error occurred while saving the service.");
     }
   };
 
@@ -358,6 +360,19 @@ export default function EditService() {
           </form>
         </div>
       </div>
+
+<ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+
     </div>
   );
 }

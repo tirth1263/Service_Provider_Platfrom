@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import { ToastContainer, toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import img1 from "../Img/Standard-Room.jpg"
 import img2 from "../Img/Deluxe-Room.jpg"
 import img3 from "../Img/Suite.jpg"
@@ -34,6 +36,10 @@ function UserDashboard() {
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
+  // New state for service availability
+  const [serviceName, setServiceName] = useState("")
+  const [availableDate, setAvailableDate] = useState("")
+  const [availableDates, setAvailableDates] = useState({})
   // const [actualPassword, setActualPassword] = useState("");
   // const [actualNewPassword, setActualNewPassword] = useState("");
 
@@ -48,14 +54,14 @@ function UserDashboard() {
     const storedWishlist = localStorage.getItem("wishlist")
     const storedAvailability = localStorage.getItem("availableDates")
     const profilePicture = localStorage.getItem("profilePicture") // Load profile picture
-  
+
     console.log("Stored user from localStorage:", storedUser)
     console.log("Username from localStorage:", username)
-  
+
     // Get user's actual password from users array
     const users = JSON.parse(localStorage.getItem("users")) || []
     let userPassword = ""
-    
+
     if (username) {
       // Find user by email/username
       const userRecord = users.find(user => user.email === username)
@@ -63,7 +69,7 @@ function UserDashboard() {
         userPassword = userRecord.password
       }
     }
-  
+
     // Check if either currentUser or username exists
     if (username || userFullName) {
       const userData = {
@@ -72,12 +78,12 @@ function UserDashboard() {
         password: userPassword,  // Add the actual password here
         profilePicture: profilePicture || "" // Add profile picture
       }
-  
+
       // Store it for consistency
       localStorage.setItem('currentUser', JSON.stringify(userData))
       setCurrentUser(userData)
       setIsLoggedIn(true)
-  
+
       setProfileData({
         name: userFullName || "",
         email: username || "",
@@ -91,7 +97,7 @@ function UserDashboard() {
         const userData = JSON.parse(storedUser)
         setCurrentUser(userData)
         setIsLoggedIn(true)
-  
+
         // Get user's actual password if not already in userData
         if (!userData.password) {
           const userRecord = users.find(user => user.email === userData.email)
@@ -99,7 +105,7 @@ function UserDashboard() {
             userData.password = userRecord.password
           }
         }
-  
+
         setProfileData({
           name: userData.name || "",
           email: userData.email || "",
@@ -207,10 +213,13 @@ function UserDashboard() {
 
     if (storedAvailability) {
       try {
-        setAvailability(JSON.parse(storedAvailability))
+        const loadedAvailability = JSON.parse(storedAvailability)
+        setAvailability(loadedAvailability)
+        setAvailableDates(loadedAvailability) // Set the availableDates state too
       } catch (error) {
         console.error("Error parsing availability data:", error)
         setAvailability({})
+        setAvailableDates({})
       }
     }
   }, [])
@@ -244,20 +253,20 @@ function UserDashboard() {
   }
 
   const handleNavClick = (section) => {
-    setActiveSection(section)
+    setActiveSection(section);
 
     // Reset editing profile state when switching sections
     if (section !== "profile") {
-      setIsEditingProfile(false)
+      setIsEditingProfile(false);
     }
 
     // If switching to calendar, reset selected date
     if (section === "calendar") {
-      const today = new Date()
-      const formattedDate = today.toISOString().split("T")[0]
-      setSelectedDate(formattedDate)
+      const today = new Date();
+      const formattedDate = today.toISOString().split("T")[0];
+      setSelectedDate(formattedDate);
     }
-  }
+  };
 
   const handleLogout = () => {
     // Remove all user-related data from localStorage
@@ -338,11 +347,11 @@ function UserDashboard() {
     setIsEditingProfile(false);
 
     if (isPasswordChanged) {
-      alert("Password changed successfully! Please login again with your new password.");
-      handleLogout(); // Log the user out
-      navigate("/login"); // Redirect to login page
+      toast.success("Password changed successfully! Please login again with your new password.");
+      handleLogout();
+      navigate("/login");
     } else {
-      alert("Profile updated successfully!");
+      toast.success("Profile updated successfully!");
     }
   }
 
@@ -360,7 +369,7 @@ function UserDashboard() {
 
     setReviews(newReviews)
     localStorage.setItem("reviews", JSON.stringify(newReviews))
-    alert("Feedback submitted!")
+    toast.success("Feedback submitted!");
 
     // Reset form
     setReviewData({
@@ -370,149 +379,284 @@ function UserDashboard() {
     })
   }
 
+  // Function to add new availability
+  const setServiceAvailability = () => {
+    if (!serviceName || !availableDate) {
+      toast.error("Please select both service and date");
+      return;
+    }
+
+    // Check if the selected date is in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(availableDate);
+
+    if (selectedDate < today) {
+      toast.error("Please select a date in the future.");
+      return;
+    }
+
+    // Update availability state
+    const updatedAvailability = { ...availableDates };
+
+    // If this service doesn't exist in the availability object yet, create an empty array for it
+    if (!updatedAvailability[serviceName]) {
+      updatedAvailability[serviceName] = [];
+    }
+
+    // Only add the date if it's not already in the array
+    if (!updatedAvailability[serviceName].includes(availableDate)) {
+      updatedAvailability[serviceName].push(availableDate);
+
+      // Save to localStorage
+      localStorage.setItem("availableDates", JSON.stringify(updatedAvailability));
+
+      // Update both state objects
+      setAvailableDates(updatedAvailability);
+      setAvailability(updatedAvailability);
+
+      toast.success(`Availability for ${serviceName} on ${availableDate} has been added.`);
+      // Reset form fields
+      setAvailableDate("");
+    } else {
+      toast.info("This date is already available for this service.");
+    }
+  }
+
+  // Function to remove availability
+  const removeServiceAvailability = (service, date) => {
+    const updatedAvailability = { ...availableDates };
+
+    // Filter out the date to remove
+    updatedAvailability[service] = updatedAvailability[service].filter(d => d !== date);
+
+    // If no more dates for this service, remove the service key
+    if (updatedAvailability[service].length === 0) {
+      delete updatedAvailability[service];
+    }
+
+    // Save to localStorage
+    localStorage.setItem("availableDates", JSON.stringify(updatedAvailability));
+
+    // Update both state objects
+    setAvailableDates(updatedAvailability);
+    setAvailability(updatedAvailability);
+
+    toast.success(`Availability for ${service} on ${date} has been removed.`);
+  }
+
   const bookService = (serviceId) => {
     // First check if user is logged in by directly checking localStorage
     const storedUser = localStorage.getItem("currentUser")
     const username = localStorage.getItem("username")
-
+  
     // If neither currentUser nor username exists in localStorage, user is not logged in
     if (!storedUser && !username) {
-      alert("Please login first to book services!")
+      toast.error("Please login first to book services!");
       navigate("/login")
       return
     }
-
+  
     // Set login state to true if we got here (user is logged in)
     setIsLoggedIn(true)
-
+  
     // If we have username but not currentUser, create a currentUser object
     if (!storedUser && username) {
       const userData = { username: username, email: username }
       localStorage.setItem("currentUser", JSON.stringify(userData))
       setCurrentUser(userData)
     }
-
+  
     // Continue with booking process
     const daysElem = document.getElementById(`days-${serviceId}`)
     const dateElem = document.getElementById(`date-${serviceId}`)
-
+  
     if (!daysElem || !dateElem) {
       console.error("Could not find days or date elements")
       return
     }
-
+  
     const days = daysElem.value
     const date = dateElem.value
-
+  
     if (!date) {
-      alert("Please select a booking date.")
+      toast.error("Please select a booking date.");
       return
     }
-
+  
     // Check if the selected date is in the past
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const selectedDate = new Date(date)
-
+  
     if (selectedDate < today) {
-      alert("Please select a date in the future.")
+      toast.error("Please select a date in the future.");
       return
     }
-
+  
     const service = services.find((s) => s.id === serviceId)
     if (!service) {
       console.error("Service not found")
       return
     }
-
+  
     const availableDates = availability[service.name] || []
-
+  
     if (availableDates.length) {
       const earliest = availableDates.sort()[0]
       if (new Date(date) < new Date(earliest)) {
-        alert(`"${service.name}" is available from ${earliest}. Please choose a valid date.`)
+        toast.error(`"${service.name}" is available from ${earliest}. Please choose a valid date.`);
         return
       }
     }
-
-    // Get user data from either currentUser or username in localStorage
-    let userData
-    try {
-      userData = storedUser ? JSON.parse(storedUser) : { username: username, email: username }
-      // Add this line to make sure name is included in the object
-      if (storedUser && JSON.parse(storedUser).name) {
-        userData.name = JSON.parse(storedUser).name
+  
+    // Generate a unique toast ID for this booking confirmation
+    const toastId = `booking-confirmation-${serviceId}-${Date.now()}`;
+  
+    // Show confirmation toast
+    toast.info(
+      <div>
+        <p className="mb-3">Confirm booking for "{service.name}" on {date}?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              // Get user data from either currentUser or username in localStorage
+              let userData
+              try {
+                userData = storedUser ? JSON.parse(storedUser) : { username: username, email: username }
+                // Add this line to make sure name is included in the object
+                if (storedUser && JSON.parse(storedUser).name) {
+                  userData.name = JSON.parse(storedUser).name
+                }
+              } catch (error) {
+                console.error("Error parsing user data:", error)
+                userData = { username: username || "Guest", email: username }
+              }
+  
+              const newBooking = {
+                id: Date.now(), // Use timestamp to ensure unique IDs
+                service: service.name,
+                user: userData.name || userData.username || userData.email,
+                email: userData.email,
+                days: days,
+                date: date,
+                revenue: service.cost * days,
+                status: "pending",
+              }
+  
+              // Get fresh bookings data from localStorage
+              let updatedBookings = []
+              const storedBookings = localStorage.getItem("bookings")
+              if (storedBookings) {
+                try {
+                  updatedBookings = JSON.parse(storedBookings)
+                } catch (error) {
+                  console.error("Error parsing bookings:", error)
+                  updatedBookings = []
+                }
+              }
+  
+              updatedBookings = [...updatedBookings, newBooking]
+              localStorage.setItem("bookings", JSON.stringify(updatedBookings))
+              setBookings(updatedBookings)
+  
+              // Close the confirmation toast
+              toast.dismiss(toastId)
+  
+              // Show success message
+              toast.success(`Service "${service.name}" booked for ${date}!`);
+            }}
+            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+          >
+            Confirm
+          </button>
+          <button
+            onClick={() => toast.dismiss(toastId)}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>,
+      {
+        toastId: toastId,
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        position: "top-center"
       }
-    } catch (error) {
-      console.error("Error parsing user data:", error)
-      userData = { username: username || "Guest", email: username }
-    }
-
-    const newBooking = {
-      id: Date.now(), // Use timestamp to ensure unique IDs
-      service: service.name,
-      user: userData.name || userData.username || userData.email,
-      email: userData.email,
-      days: days,
-      date: date,
-      revenue: service.cost * days,
-      status: "pending",
-    }
-
-    // Get fresh bookings data from localStorage
-    let updatedBookings = []
-    const storedBookings = localStorage.getItem("bookings")
-    if (storedBookings) {
-      try {
-        updatedBookings = JSON.parse(storedBookings)
-      } catch (error) {
-        console.error("Error parsing bookings:", error)
-        updatedBookings = []
-      }
-    }
-
-    updatedBookings = [...updatedBookings, newBooking]
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings))
-    setBookings(updatedBookings)
-
-    alert(`Service "${service.name}" booked for ${date}!`)
+    );
   }
 
   const handleDateClick = (day) => {
     // Create date from day number (using current month and year)
-    const today = new Date()
-    const selectedDay = new Date(today.getFullYear(), today.getMonth(), day)
-
+    const today = new Date();
+    const selectedDay = new Date(today.getFullYear(), today.getMonth(), day);
+  
     // Check if the selected date is in the past
-    const currentDate = new Date()
-    currentDate.setHours(0, 0, 0, 0)
-
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+  
     if (selectedDay < currentDate) {
-      alert("You cannot select dates in the past.")
-      return
+      toast.error("You cannot select dates in the past.");
+      return;
     }
-
-    const formattedDate = selectedDay.toISOString().split("T")[0]
-    setSelectedDate(formattedDate)
-
+  
+    const formattedDate = selectedDay.toISOString().split("T")[0];
+    setSelectedDate(formattedDate);
+  
     // If a service is already selected, auto-fill its date input
     if (selectedService) {
-      const dateElem = document.getElementById(`date-${selectedService}`)
+      const dateElem = document.getElementById(`date-${selectedService}`);
       if (dateElem) {
-        dateElem.value = formattedDate
+        dateElem.value = formattedDate;
       }
     }
-
+  
+    // Create unique toast ID
+    const toastId = `date-booking-${formattedDate}`;
+  
     // Navigate to services section if user wants to make a booking
-    if (window.confirm("Would you like to book a service for this date?")) {
-      setActiveSection("services")
-    }
+    toast.info(
+      <div>
+        <p className="mb-3">Would you like to book a service for this date?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              // Navigate to services section
+              setActiveSection("services");
+              
+              // Close the confirmation toast
+              toast.dismiss(toastId);
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+          >
+            OK
+          </button>
+          <button
+            onClick={() => toast.dismiss(toastId)}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>,
+      {
+        toastId: toastId,
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        position: "top-center"
+      }
+    );
   }
 
   const saveToWishlist = (id) => {
     // Enhanced login check
     if (!checkLoginStatus()) {
-      alert("Please login first to save to wishlist!")
+      toast.error("Please login first to save to wishlist!");
       navigate("/login")
       return
     }
@@ -521,7 +665,7 @@ function UserDashboard() {
       const updatedWishlist = [...wishlist, id]
       setWishlist(updatedWishlist)
       localStorage.setItem("wishlist", JSON.stringify(updatedWishlist))
-      alert("Added to wishlist!")
+      toast.success("Added to wishlist!");
     }
   }
 
@@ -532,12 +676,49 @@ function UserDashboard() {
   }
 
   const cancelBooking = (id) => {
-    if (window.confirm("Cancel this booking?")) {
-      const updatedBookings = bookings.filter((b) => b.id !== id)
-      setBookings(updatedBookings)
-      localStorage.setItem("bookings", JSON.stringify(updatedBookings))
-    }
-  }
+    // Create a unique ID for this toast
+    const toastId = `cancel-booking-${id}`;
+
+    // Show confirmation toast with buttons
+    toast.info(
+      <div>
+        <p className="mb-3">Cancel this booking?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              // Perform the cancellation
+              const updatedBookings = bookings.filter((b) => b.id !== id);
+              setBookings(updatedBookings);
+              localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+
+              // Close the confirmation toast
+              toast.dismiss(toastId);
+
+              // Show success message
+              toast.success('Booking cancelled successfully!');
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+          >
+            OK
+          </button>
+          <button
+            onClick={() => toast.dismiss(toastId)}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>,
+      {
+        toastId: toastId,
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        position: "top-center"
+      }
+    );
+  };
 
   const deleteReview = (index) => {
     const myReviews = reviews.filter((r) => r.user === currentUser.username)
@@ -631,22 +812,7 @@ function UserDashboard() {
             {item.label}
           </button>
         ))}
-        {/* Show Login or Logout based on isLoggedIn state */}
-        {!isLoggedIn ? (
-          <button
-            onClick={() => navigate("/login")}
-            className="text-white mx-2 my-1 px-4 py-2 rounded text-lg hover:bg-[#f39c12] hover:text-black transition duration-200"
-          >
-            Login
-          </button>
-        ) : (
-          <button
-            onClick={handleLogout}
-            className="text-white mx-2 my-1 px-4 py-2 rounded text-lg hover:bg-[#f39c12] hover:text-black transition duration-200"
-          >
-            Logout
-          </button>
-        )}
+
       </nav>
 
       {/* Welcome message showing login status - Modified to show name instead of email */}
@@ -752,260 +918,256 @@ function UserDashboard() {
           </div>
         )}
 
-        {/* Wishlist Section */}
-        {activeSection === "wishlist" && (
-          <div className="bg-white p-5 rounded-lg shadow mb-5">
-            <h2 className="text-xl font-semibold mb-4">My Wishlist</h2>
-
-            <div className="space-y-4">
-              {wishlist.map((id) => {
-                const service = services.find((s) => s.id === id)
-                if (!service) return null
-
-                return (
-                  <div key={service.id} className="bg-white rounded-lg shadow p-4 flex items-center flex-wrap">
-                    <img
-                      src={getImageSource(service) || "/placeholder.svg"}
-                      alt={service.name}
-                      className="w-32 h-20 object-cover rounded mr-4 mb-4 sm:mb-0"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg">{service.name}</h3>
-                      <p className="text-gray-600">{service.description}</p>
-                      <p>${service.cost}</p>
-
-                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <button
-                          onClick={() => bookService(service.id)}
-                          className="bg-green-600 text-white p-2 rounded hover:bg-green-700"
-                        >
-                          Book Now
-                        </button>
-                        <button
-                          onClick={() => removeFromWishlist(service.id)}
-                          className="bg-red-600 text-white p-2 rounded hover:bg-red-700"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-
-              {wishlist.length === 0 && <p className="text-center py-4">Your wishlist is empty.</p>}
-            </div>
-          </div>
-        )}
-
-        {/* Bookings Section */}
-        {activeSection === "bookings" && (
-          <div className="bg-white p-5 rounded-lg shadow mb-5">
-            <h2 className="text-xl font-semibold mb-4">My Bookings</h2>
-
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-[#2c3e50] text-white">
-                    <th className="border border-gray-300 p-2">Service</th>
-                    <th className="border border-gray-300 p-2">Days</th>
-                    <th className="border border-gray-300 p-2">Date</th>
-                    <th className="border border-gray-300 p-2">Status</th>
-                    <th className="border border-gray-300 p-2">Cancel</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {userBookings.map((booking) => (
-                    <tr key={booking.id}>
-                      <td className="border border-gray-300 p-2 text-center">{booking.service}</td>
-                      <td className="border border-gray-300 p-2 text-center">{booking.days}</td>
-                      <td className="border border-gray-300 p-2 text-center">{booking.date || "-"}</td>
-                      <td className="border border-gray-300 p-2 text-center">{booking.status || "pending"}</td>
-                      <td className="border border-gray-300 p-2 text-center">
-                        <button
-                          onClick={() => cancelBooking(booking.id)}
-                          className="bg-red-600 text-white p-2 rounded hover:bg-red-700"
-                        >
-                          Cancel
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {userBookings.length === 0 && (
-                    <tr>
-                      <td colSpan="5" className="border border-gray-300 p-4 text-center">
-                        No bookings found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-{/* Profile Section - Enhanced with profile picture upload */}
-{activeSection === "profile" && (
+ {/* Bookings Section */}
+{activeSection === "bookings" && (
   <div className="bg-white p-5 rounded-lg shadow mb-5">
-    <h2 className="text-xl font-semibold mb-4">My Profile</h2>
-
-    {isLoggedIn ? (
-      <>
-        {!isEditingProfile ? (
-          <div className="flex flex-col md:flex-row items-start">
-            <div className="mb-4 md:mr-8">
-              {profileData.profilePicture ? (
-                <img 
-                  src={profileData.profilePicture} 
-                  alt="Profile" 
-                  className="w-32 h-32 rounded-full object-cover border-2 border-gray-300" 
-                />
-              ) : (
-                <div className="w-32 h-32 rounded-full bg-gray-300 flex items-center justify-center text-gray-500">
-                  <span className="text-3xl">👤</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex-1">
-              <p className="mb-2"><strong>Name:</strong> {profileData.name || "(Not set)"}</p>
-              <p className="mb-2"><strong>Email:</strong> {profileData.email}</p>
-              <p className="mb-4"><strong>Password:</strong> ••••••••</p>
-              
-              <button
-                onClick={toggleEditProfile}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                Edit Profile
-              </button>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleProfileSubmit} className="space-y-4">
-            <div className="mb-6">
-              <label className="block mb-2">Profile Picture</label>
-              <div className="flex items-center space-x-4">
-                {profileData.profilePicture ? (
-                  <img 
-                    src={profileData.profilePicture} 
-                    alt="Profile Preview" 
-                    className="w-32 h-32 rounded-full object-cover border-2 border-gray-300" 
-                  />
-                ) : (
-                  <div className="w-32 h-32 rounded-full bg-gray-300 flex items-center justify-center text-gray-500">
-                    <span className="text-3xl">👤</span>
-                  </div>
-                )}
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleProfilePictureChange}
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block mb-2">Full Name</label>
-              <input
-                type="text"
-                value={profileData.name}
-                onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block mb-2">Email</label>
-              <input
-                type="email"
-                value={profileData.email}
-                onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded"
-                required
-                disabled
-              />
-              <small className="text-gray-500">Email cannot be changed</small>
-            </div>
-            
-            <div className="relative">
-              <label className="block mb-2">Current Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={profileData.password}
-                  onChange={(e) => setProfileData({ ...profileData, password: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded pr-10"
-                  required
-                />
-                <button 
-                  type="button"
-                  className="absolute right-3 top-3 text-gray-500"
-                  onClick={togglePasswordVisibility}
-                >
-                  {showPassword ? "🙈" : "👁️"}
-                </button>
-              </div>
-            </div>
-            
-            <div className="relative">
-              <label className="block mb-2">New Password (leave blank to keep current)</label>
-              <div className="relative">
-                <input
-                  type={showNewPassword ? "text" : "password"}
-                  value={profileData.newPassword}
-                  onChange={(e) => setProfileData({ ...profileData, newPassword: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded pr-10"
-                />
-                <button 
-                  type="button"
-                  className="absolute right-3 top-3 text-gray-500"
-                  onClick={toggleNewPasswordVisibility}
-                >
-                  {showNewPassword ? "🙈" : "👁️"}
-                </button>
-              </div>
-            </div>
-            
-            <div className="flex space-x-3">
-              <button
-                type="submit"
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-              >
-                Save Changes
-              </button>
-              <button
-                type="button"
-                onClick={toggleEditProfile}
-                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
-      </>
-    ) : (
-      <div className="text-center py-4">
-        <p>Please login to view your profile.</p>
-        <button
-          onClick={() => navigate("/login")}
-          className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Go to Login
-        </button>
+    <h2 className="text-xl font-semibold mb-4">My Bookings</h2>
+    {userBookings.length > 0 ? (
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white">
+          <thead>
+            <tr>
+              <th className="py-2 px-4 border-b border-gray-200 bg-gray-100 text-left">Service</th>
+              <th className="py-2 px-4 border-b border-gray-200 bg-gray-100 text-left">Days</th>
+              <th className="py-2 px-4 border-b border-gray-200 bg-gray-100 text-left">Date</th>
+              <th className="py-2 px-4 border-b border-gray-200 bg-gray-100 text-left">Cost</th>
+              <th className="py-2 px-4 border-b border-gray-200 bg-gray-100 text-left">Status</th>
+              <th className="py-2 px-4 border-b border-gray-200 bg-gray-100 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {userBookings.map((booking) => (
+              <tr key={booking.id}>
+                <td className="py-2 px-4 border-b border-gray-200">{booking.service}</td>
+                <td className="py-2 px-4 border-b border-gray-200">{booking.days}</td>
+                <td className="py-2 px-4 border-b border-gray-200">{booking.date}</td>
+                <td className="py-2 px-4 border-b border-gray-200">${booking.revenue}</td>
+                <td className="py-2 px-4 border-b border-gray-200 capitalize">
+                  <span 
+                    className={`px-2 py-1 rounded ${
+                      booking.status === 'confirmed' ? 'bg-green-100 text-green-800' : 
+                      booking.status === 'cancelled' ? 'bg-red-100 text-red-800' : 
+                      'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    {booking.status}
+                  </span>
+                </td>
+                <td className="py-2 px-4 border-b border-gray-200">
+                  {booking.status === "pending" && (
+                    <button
+                      onClick={() => cancelBooking(booking.id)}
+                      className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+    ) : (
+      <p className="text-center py-4">You have no bookings yet.</p>
     )}
   </div>
 )}
 
-{/* Submit Review Section */}
+{/* Wishlist Section */}
+{activeSection === "wishlist" && (
+  <div className="bg-white p-5 rounded-lg shadow mb-5">
+    <h2 className="text-xl font-semibold mb-4">My Wishlist</h2>
+    {wishlist.length > 0 ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {wishlist.map((id) => {
+          const service = services.find((s) => s.id === id);
+          if (!service) return null;
+          
+          return (
+            <div key={service.id} className="bg-white rounded-lg shadow overflow-hidden">
+              <img
+                src={getImageSource(service)}
+                alt={service.name}
+                className="w-full h-40 object-cover"
+              />
+              <div className="p-4">
+                <h3 className="font-semibold text-lg">{service.name}</h3>
+                <p className="text-gray-600 mb-2">{service.description}</p>
+                <p className="mb-2">Category: {service.category}</p>
+                <p className="mb-3">Cost: ${service.cost}</p>
+                <div className="flex justify-between">
+                  <button
+                    onClick={() => bookService(service.id)}
+                    className="bg-green-600 text-white py-1 px-3 rounded hover:bg-green-700"
+                  >
+                    Book Now
+                  </button>
+                  <button
+                    onClick={() => removeFromWishlist(service.id)}
+                    className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    ) : (
+      <p className="text-center py-4">Your wishlist is empty.</p>
+    )}
+  </div>
+)}
+
+{/* Profile Section */}
+{activeSection === "profile" && (
+  <div className="bg-white p-5 rounded-lg shadow mb-5">
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-xl font-semibold">My Profile</h2>
+      <button
+        onClick={toggleEditProfile}
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
+        {isEditingProfile ? "Cancel Edit" : "Edit Profile"}
+      </button>
+    </div>
+
+    {!isEditingProfile ? (
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="flex-shrink-0">
+          {profileData.profilePicture ? (
+            <img
+              src={profileData.profilePicture}
+              alt="Profile"
+              className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
+            />
+          ) : (
+            <div className="w-32 h-32 rounded-full bg-gray-300 flex items-center justify-center text-gray-500 text-4xl border-4 border-gray-200">
+              {currentUser.name?.charAt(0) || currentUser.username?.charAt(0) || "?"}
+            </div>
+          )}
+        </div>
+        <div className="flex-grow">
+          <div className="mb-3">
+            <label className="block text-gray-600">Name</label>
+            <div className="font-semibold text-lg">{profileData.name || "Not set"}</div>
+          </div>
+          <div className="mb-3">
+            <label className="block text-gray-600">Email</label>
+            <div className="font-semibold text-lg">{profileData.email}</div>
+          </div>
+          
+        </div>
+      </div>
+    ) : (
+      <form onSubmit={handleProfileSubmit}>
+        <div className="mb-4">
+          <label htmlFor="profilePicture" className="block text-gray-600 mb-2">Profile Picture</label>
+          <div className="flex items-center gap-4">
+            {profileData.profilePicture ? (
+              <img 
+                src={profileData.profilePicture} 
+                alt="Profile" 
+                className="w-24 h-24 rounded-full object-cover" 
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-gray-300 flex items-center justify-center text-gray-500 text-2xl">
+                {currentUser.name?.charAt(0) || currentUser.username?.charAt(0) || "?"}
+              </div>
+            )}
+            <input
+              type="file"
+              id="profilePicture"
+              accept="image/*"
+              onChange={handleProfilePictureChange}
+              className="w-full max-w-xs"
+            />
+          </div>
+        </div>
+        <div className="mb-4">
+          <label htmlFor="name" className="block text-gray-600 mb-2">Name</label>
+          <input
+            type="text"
+            id="name"
+            value={profileData.name}
+            onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+            className="w-full p-2 border border-gray-300 rounded"
+          />
+        </div>
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-gray-600 mb-2">Email</label>
+          <input
+            type="email"
+            id="email"
+            value={profileData.email}
+            onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+            className="w-full p-2 border border-gray-300 rounded"
+            readOnly
+          />
+        </div>
+        <div className="mb-4">
+          <label htmlFor="password" className="block text-gray-600 mb-2">Current Password</label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              value={profileData.password}
+              onChange={(e) => setProfileData({ ...profileData, password: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded"
+              readOnly
+            />
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              className="absolute right-2 top-2 text-gray-500"
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
+        <div className="mb-4">
+          <label htmlFor="newPassword" className="block text-gray-600 mb-2">New Password</label>
+          <div className="relative">
+            <input
+              type={showNewPassword ? "text" : "password"}
+              id="newPassword"
+              value={profileData.newPassword}
+              onChange={(e) => setProfileData({ ...profileData, newPassword: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+            <button
+              type="button"
+              onClick={toggleNewPasswordVisibility}
+              className="absolute right-2 top-2 text-gray-500"
+            >
+              {showNewPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+          <p className="text-gray-500 text-sm mt-1">Leave blank if you don't want to change password</p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Save Changes
+          </button>
+          <button
+            type="button"
+            onClick={toggleEditProfile}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    )}
+  </div>
+)}
+
+{/* Submit Reviews Section */}
 {activeSection === "reviews" && (
   <div className="bg-white p-5 rounded-lg shadow mb-5">
     <h2 className="text-xl font-semibold mb-4">Submit Feedback</h2>
@@ -1013,14 +1175,12 @@ function UserDashboard() {
     {isLoggedIn ? (
       <form onSubmit={handleReviewSubmit} className="space-y-4">
         <div>
-          <label htmlFor="service" className="block mb-2">
-            Select Service
-          </label>
+          <label htmlFor="service" className="block text-gray-600 mb-2">Select Service</label>
           <select
             id="service"
             value={reviewData.service}
             onChange={(e) => setReviewData({ ...reviewData, service: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded"
+            className="w-full p-2 border border-gray-300 rounded"
             required
           >
             <option value="">Select a service</option>
@@ -1033,49 +1193,47 @@ function UserDashboard() {
         </div>
 
         <div>
-          <label htmlFor="rating" className="block mb-2">
-            Rating
-          </label>
+          <label htmlFor="rating" className="block text-gray-600 mb-2">Rating</label>
           <select
             id="rating"
             value={reviewData.rating}
             onChange={(e) => setReviewData({ ...reviewData, rating: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded"
-            required
+            className="w-full p-2 border border-gray-300 rounded"
           >
-            <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
-            <option value="4">⭐⭐⭐⭐ (4/5)</option>
-            <option value="3">⭐⭐⭐ (3/5)</option>
-            <option value="2">⭐⭐ (2/5)</option>
-            <option value="1">⭐ (1/5)</option>
+            <option value="5">5 Stars (Excellent)</option>
+            <option value="4">4 Stars (Good)</option>
+            <option value="3">3 Stars (Average)</option>
+            <option value="2">2 Stars (Poor)</option>
+            <option value="1">1 Star (Very Poor)</option>
           </select>
         </div>
 
         <div>
-          <label htmlFor="comment" className="block mb-2">
-            Comment
-          </label>
+          <label htmlFor="comment" className="block text-gray-600 mb-2">Your Comments</label>
           <textarea
             id="comment"
             value={reviewData.comment}
             onChange={(e) => setReviewData({ ...reviewData, comment: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded min-h-[120px]"
+            className="w-full p-2 border border-gray-300 rounded h-32"
             required
           ></textarea>
         </div>
 
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
           Submit Review
         </button>
       </form>
     ) : (
       <div className="text-center py-4">
-        <p>Please login to submit feedback.</p>
+        <p className="mb-3">Please login to submit a review.</p>
         <button
           onClick={() => navigate("/login")}
-          className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          Go to Login
+          Login
         </button>
       </div>
     )}
@@ -1087,143 +1245,183 @@ function UserDashboard() {
   <div className="bg-white p-5 rounded-lg shadow mb-5">
     <h2 className="text-xl font-semibold mb-4">My Reviews</h2>
 
-    {isLoggedIn ? (
+    {userReviews.length > 0 ? (
       <div className="space-y-4">
         {userReviews.map((review, index) => (
-          <div key={index} className="bg-white rounded-lg shadow p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold">{review.service}</h3>
-                <p className="text-yellow-500">
-                  {Array(parseInt(review.rating)).fill("⭐").join("")} ({review.rating}/5)
-                </p>
-                <p className="mt-2">{review.comment}</p>
+          <div key={index} className="border border-gray-200 rounded-lg p-4">
+            <div className="flex justify-between">
+              <h3 className="font-semibold">{review.service}</h3>
+              <div className="flex items-center">
+                <span className="mr-2">
+                  {Array(parseInt(review.rating))
+                    .fill("⭐")
+                    .join("")}
+                </span>
+                <button
+                  onClick={() => deleteReview(index)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  ×
+                </button>
               </div>
-              <button
-                onClick={() => deleteReview(index)}
-                className="bg-red-600 text-white p-2 rounded hover:bg-red-700"
-              >
-                Delete
-              </button>
             </div>
+            <p className="text-gray-600 mt-2">{review.comment}</p>
           </div>
         ))}
-
-        {userReviews.length === 0 && <p className="text-center py-4">You haven't submitted any reviews yet.</p>}
       </div>
     ) : (
-      <div className="text-center py-4">
-        <p>Please login to view your reviews.</p>
-        <button
-          onClick={() => navigate("/login")}
-          className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Go to Login
-        </button>
-      </div>
+      <p className="text-center py-4">You haven't submitted any reviews yet.</p>
     )}
   </div>
 )}
 
-{/* Calendar View Section */}
+{/* Calendar/Availability Section */}
 {activeSection === "calendar" && (
   <div className="bg-white p-5 rounded-lg shadow mb-5">
-    <h2 className="text-xl font-semibold mb-4">Availability Calendar</h2>
+    <h2 className="text-xl font-semibold mb-4">Service Calendar</h2>
 
-    <div className="mb-4">
-      <p>
-        <strong>Selected Date:</strong> {selectedDate || "None"}
-      </p>
-    </div>
-
-    <div className="grid grid-cols-7 gap-1">
-      {/* Day names */}
-      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-        <div key={day} className="text-center font-semibold p-2 bg-[#2c3e50] text-white">
-          {day}
-        </div>
-      ))}
-
-      {/* Days */}
-      {Array(31)
-        .fill(null)
-        .map((_, i) => {
-          const day = i + 1
-          const date = new Date(today.getFullYear(), today.getMonth(), day)
-          const isPast = date < today && date.getMonth() === today.getMonth()
-          const isCurrentDay = day === today.getDate() && date.getMonth() === today.getMonth()
-
-          // Skip days that are not in the current month
-          if (date.getMonth() !== today.getMonth()) return null
-
-          return (
-            <div
-              key={i}
-              onClick={() => !isPast && handleDateClick(day)}
-              className={`cursor-pointer text-center p-3 border ${
-                isCurrentDay
-                  ? "bg-blue-100 border-blue-500"
-                  : isPast
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "hover:bg-green-100"
-              }`}
-            >
-              {day}
-            </div>
-          )
-        })}
-    </div>
-
-    <div className="mt-4">
-      <h3 className="font-semibold">Services Available on Selected Date</h3>
-      <div className="mt-2">
-        {selectedDate ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {services.map((service) => {
-              const availableDates = availability[service.name] || []
-              const isAvailable =
-                !availableDates.length ||
-                availableDates.some((date) => new Date(date) <= new Date(selectedDate))
-
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-3">Select a Date</h3>
+        
+        <div className="bg-gray-50 p-4 rounded shadow-inner">
+          <div className="grid grid-cols-7 gap-1 text-center mb-2">
+            <div className="text-gray-500 font-medium">Sun</div>
+            <div className="text-gray-500 font-medium">Mon</div>
+            <div className="text-gray-500 font-medium">Tue</div>
+            <div className="text-gray-500 font-medium">Wed</div>
+            <div className="text-gray-500 font-medium">Thu</div>
+            <div className="text-gray-500 font-medium">Fri</div>
+            <div className="text-gray-500 font-medium">Sat</div>
+          </div>
+          
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: new Date(currentYear, today.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map((day) => {
+              const currentDate = new Date(currentYear, today.getMonth(), day);
+              const isToday = today.getDate() === day;
+              const isPast = currentDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+              const formattedDate = currentDate.toISOString().split("T")[0];
+              
+              // Check if any service is available on this date
+              const isAvailable = Object.values(availability).some(dates => dates.includes(formattedDate));
+              
               return (
-                <div
-                  key={service.id}
-                  className={`p-3 border rounded ${isAvailable ? "border-green-500" : "border-red-300"}`}
+                <button
+                  key={day}
+                  onClick={() => handleDateClick(day)}
+                  disabled={isPast}
+                  className={`
+                    h-12 flex items-center justify-center rounded-lg
+                    ${isToday ? "bg-blue-100 border border-blue-500" : ""}
+                    ${isPast ? "text-gray-400 bg-gray-100" : "hover:bg-blue-50"}
+                    ${isAvailable ? "border-2 border-green-500" : ""}
+                    ${selectedDate === formattedDate ? "bg-blue-200" : ""}
+                  `}
                 >
-                  <p className="font-semibold">{service.name}</p>
-                  <p className={isAvailable ? "text-green-600" : "text-red-600"}>
-                    {isAvailable ? "Available" : "Not Available"}
-                  </p>
-                  {isAvailable && (
-                    <button
-                      onClick={() => {
-                        // Set selected service and navigate to services section
-                        handleServiceClick(service.id)
-                        setActiveSection("services")
-                      }}
-                      className="mt-2 bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
-                    >
-                      Book Now
-                    </button>
-                  )}
-                </div>
-              )
+                  {day}
+                </button>
+              );
             })}
           </div>
-        ) : (
-          <p>Please select a date to see available services.</p>
+        </div>
+        
+        {selectedDate && (
+          <div className="mt-4 p-3 bg-blue-50 rounded">
+            <p>Selected Date: <strong>{selectedDate}</strong></p>
+            <p className="mt-2">Available Services:</p>
+            <ul className="list-disc ml-5 mt-1">
+              {Object.entries(availability).filter(([_, dates]) => dates.includes(selectedDate)).map(([service]) => (
+                <li key={service}>{service}</li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
+
+      {isLoggedIn && (
+        <div>
+          <h3 className="text-lg font-semibold mb-3">Set Service Availability</h3>
+          
+          <div className="bg-gray-50 p-4 rounded shadow-inner">
+            <div className="mb-4">
+              <label className="block mb-2">Service:</label>
+              <select
+                value={serviceName}
+                onChange={(e) => setServiceName(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded"
+                required
+              >
+                <option value="">Select a service</option>
+                {services.map((service) => (
+                  <option key={service.id} value={service.name}>
+                    {service.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block mb-2">Available Date:</label>
+              <input
+                type="date"
+                value={availableDate}
+                onChange={(e) => setAvailableDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full p-2 border border-gray-300 rounded"
+                required
+              />
+            </div>
+            
+            <button
+              onClick={setServiceAvailability}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            >
+              Set Availability
+            </button>
+          </div>
+          
+          <div className="mt-4">
+            <h4 className="font-medium mb-2">Current Availability:</h4>
+            <div className="max-h-64 overflow-y-auto">
+              {Object.entries(availableDates).map(([service, dates]) => (
+                <div key={service} className="mb-3">
+                  <h5 className="font-medium">{service}</h5>
+                  <ul className="ml-5">
+                    {dates.map((date) => (
+                      <li key={date} className="flex justify-between items-center text-sm">
+                        <span>{date}</span>
+                        <button
+                          onClick={() => removeServiceAvailability(service, date)}
+                          className="text-red-500 text-xs hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              {Object.keys(availableDates).length === 0 && (
+                <p className="text-gray-500 text-sm">No availability set yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   </div>
 )}
-      </div>
 
-      <footer className="bg-[#1f2a44] text-white text-center p-5 mt-auto">
-        <p>&copy; {currentYear} Mastang Resort. All rights reserved.</p>
-      </footer>
-    </div>
-  )
+{/* Footer */}
+<footer className="mt-auto bg-[#1f2a44] text-white text-center py-3 text-sm">
+  <p>&copy; {currentYear} Mastang Resort. All rights reserved.</p>
+</footer>
+
+{/* Toast container for notifications */}
+<ToastContainer position="top-right" autoClose={5000} />
+</div>
+</div>
+);
 }
 
-export default UserDashboard
+export default UserDashboard;

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { XCircle, Bell, MessageSquare, Send, Maximize2, Minimize2, Menu } from 'lucide-react';
 
 function ServiceProviderDashboard() {
@@ -12,6 +14,7 @@ function ServiceProviderDashboard() {
   const [availableDate, setAvailableDate] = useState('');
   const [notification, setNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
+  // eslint-disable-next-line no-unused-vars
   const [notificationCount, setNotificationCount] = useState(0);
   const [newService, setNewService] = useState({
     serviceName: '',
@@ -33,6 +36,7 @@ function ServiceProviderDashboard() {
   const [messageInput, setMessageInput] = useState('');
   const [conversations, setConversations] = useState({});
   const [unreadMessages, setUnreadMessages] = useState({});
+  // eslint-disable-next-line no-unused-vars
   const [chatNotification, setChatNotification] = useState(false);
   const [activeChatUsers, setActiveChatUsers] = useState([]);
 
@@ -142,6 +146,7 @@ function ServiceProviderDashboard() {
   };
 
   // Mock receive message (for demo purposes)
+  // eslint-disable-next-line no-unused-vars
   const mockReceiveMessage = (userId) => {
     const mockResponses = [
       "Thank you for your response!",
@@ -202,6 +207,7 @@ function ServiceProviderDashboard() {
   // Check for new bookings
   const checkForNewBookings = () => {
     const storedBookings = JSON.parse(localStorage.getItem('bookings')) || [];
+    // eslint-disable-next-line no-unused-vars
     const lastCount = parseInt(localStorage.getItem('lastBookingCount')) || 0;
     const lastProcessedIds = JSON.parse(localStorage.getItem('lastProcessedBookingIds')) || [];
 
@@ -266,7 +272,7 @@ function ServiceProviderDashboard() {
 
     setBookings(updatedBookings);
     localStorage.setItem('bookings', JSON.stringify(updatedBookings));
-    alert(`Service "${service}" accepted!`);
+    toast.success(`Service "${service}" accepted!`);
   };
 
   const declineRequest = (service) => {
@@ -280,7 +286,7 @@ function ServiceProviderDashboard() {
 
       setBookings(updatedBookings);
       localStorage.setItem('bookings', JSON.stringify(updatedBookings));
-      alert(`Service "${service}" declined.`);
+      toast.warn(`Service "${service}" declined.`);
     }
   };
 
@@ -292,9 +298,10 @@ function ServiceProviderDashboard() {
       return b;
     });
 
+    // Update both localStorage and state
     setBookings(updatedBookings);
     localStorage.setItem('bookings', JSON.stringify(updatedBookings));
-    alert(`Service "${service}" marked as completed!`);
+    toast.success(`Service "${service}" marked as completed!`);
   };
 
   const addService = (e) => {
@@ -323,7 +330,7 @@ function ServiceProviderDashboard() {
       serviceSubCategory: ''
     });
 
-    alert('Service added!');
+    toast.success('Service added successfully!');
   };
 
   const deleteService = (id) => {
@@ -332,16 +339,17 @@ function ServiceProviderDashboard() {
       setServices(updatedServices);
       localStorage.setItem('services', JSON.stringify(updatedServices));
     }
+    toast.error('Service deleted!');
   };
 
   const updateProfile = (e) => {
     e.preventDefault();
-    alert('Profile updated!');
+    toast.success('Profile updated successfully!');
   };
 
   const logout = () => {
     localStorage.removeItem('currentUser');
-    alert('Logged out!');
+    toast.info('Logged out successfully!');
     window.location.href = '/login';
   };
 
@@ -589,225 +597,24 @@ function ServiceProviderDashboard() {
       )}
 
       <div className="w-[90%] mx-auto p-5">
+        {/* REQUESTED SERVICES SECTION */}
         {activeSection === 'requests' && (
-          <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
-            <h2 className="text-center mb-5 text-xl font-semibold">Requested Services</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Service</th>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">User</th>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Days</th>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings.map((booking, index) => (
-                    <tr key={index} className={(!booking.status || booking.status === 'pending') ? 'bg-yellow-50' : ''}>
-                      <td className="border border-gray-300 p-2 text-center">{booking.service}</td>
-                      <td className="border border-gray-300 p-2 text-center">
-                        {booking.user}
-                        <button
-                          onClick={() => {
-                            // Convert user name to userId format (demo purposes)
-                            const userId = booking.user.toLowerCase().replace(' ', '_');
-                            openChat(userId);
-                            toggleChat();
-                          }}
-                          className="ml-2 bg-blue-500 text-white p-1 rounded text-xs hover:bg-blue-600"
-                        >
-                          <MessageSquare size={14} className="inline mr-1" />
-                          Chat
-                        </button>
-                      </td>
-                      <td className="border border-gray-300 p-2 text-center">{booking.days}</td>
-                      <td className="border border-gray-300 p-2 text-center">
-                        <button
-                          onClick={() => acceptRequest(booking.service)}
-                          className={`bg-green-600 text-white p-2 rounded m-1 hover:bg-green-700 w-full md:w-auto ${booking.status === 'accepted' || booking.status === 'rejected' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          disabled={booking.status === 'accepted' || booking.status === 'rejected'}
-                        >
-                          Accept
-                        </button>
-                        <button
-                          onClick={() => declineRequest(booking.service)}
-                          className={`bg-red-600 text-white p-2 rounded m-1 hover:bg-red-700 w-full md:w-auto ${booking.status === 'accepted' || booking.status === 'rejected' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          disabled={booking.status === 'accepted' || booking.status === 'rejected'}
-                        >
-                          Decline
-                        </button>
-                      </td>
+          <>
+            <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
+              <h2 className="text-center mb-5 text-xl font-semibold">Requested Services</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Service</th>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">User</th>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Days</th>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Revenue Summary Section */}
-        <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
-          <h2 className="text-center mb-5 text-xl font-semibold">Revenue Summary</h2>
-          <p className=""><strong>Total Earnings:</strong> ${revenueSummary.total}</p>
-          <p className=""><strong>Total Bookings:</strong> {revenueSummary.bookingsCount}</p>
-          <p className=""><strong>Most Booked Service:</strong> {revenueSummary.topService}</p>
-        </div>
-
-        {/* Filter Bookings Section */}
-        <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
-          <h2 className="text-center mb-5 text-xl font-semibold">Filter Bookings</h2>
-          <select
-            className="w-full p-3 border border-gray-300 rounded"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="all">All</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="accepted">Accepted</option>
-            <option value="completed">Completed</option>
-            <option value="rejected">Rejected</option>
-          </select>
-
-          {/* Show filtered bookings */}
-          <div className="mt-4 overflow-x-auto">
-            <h3 className="text-lg font-semibold mb-2">Filtered Bookings</h3>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Service</th>
-                  <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">User</th>
-                  <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Days</th>
-                  <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {getFilteredBookings().map((booking, index) => (
-                  <tr key={index}>
-                    <td className="border border-gray-300 p-2 text-center">{booking.service}</td>
-                    <td className="border border-gray-300 p-2 text-center">{booking.user}</td>
-                    <td className="border border-gray-300 p-2 text-center">{booking.days}</td>
-                    <td className="border border-gray-300 p-2 text-center">{booking.status || 'upcoming'}</td>
-                  </tr>
-                ))}
-                {getFilteredBookings().length === 0 && (
-                  <tr>
-                    <td colSpan="4" className="border border-gray-300 p-2 text-center">No bookings found with the selected filter.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Availability Calendar Section */}
-        <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
-          <h2 className="text-center mb-5 text-xl font-semibold">Set Availability</h2>
-          <label className="block mb-2">Enter Service Name:</label>
-          <input
-            type="text"
-            placeholder="Type the service name"
-            className="w-full p-3 border border-gray-300 rounded mb-4"
-            value={serviceName}
-            onChange={(e) => setServiceName(e.target.value)}
-          />
-
-          <label className="block mb-2">Select Available Date:</label>
-          <input
-            type="date"
-            className="w-full p-3 border border-gray-300 rounded mb-4"
-            value={availableDate}
-            onChange={(e) => setAvailableDate(e.target.value)}
-          />
-          <button
-            className="w-full p-3 bg-green-600 text-white rounded hover:bg-green-700 mb-4"
-            onClick={setAvailability}
-          >
-            Add Availability
-          </button>
-
-          <div className="mt-4">
-            {availableDates[serviceName] && availableDates[serviceName].map((date, index) => (
-              <div key={index} className="flex justify-between items-center p-2 border-b">
-                <span>{date}</span>
-                <button
-                  className="bg-red-600 text-white p-1 px-2 rounded hover:bg-red-700 flex items-center"
-                  onClick={() => removeAvailability(serviceName, date)}
-                >
-                  <XCircle size={16} className="mr-1" /> Remove
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Feedback Analytics Section */}
-        <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
-          <h2 className="text-center mb-5 text-xl font-semibold">Feedback Analytics</h2>
-          <p><strong>Average Rating:</strong> {feedbackAnalytics.avgRating} / 5.0</p>
-
-          {/* Common feedback words */}
-          <div className="mt-4">
-            <h3 className="text-lg font-semibold">Common Feedback Words:</h3>
-            <div className="flex flex-wrap mt-2">
-              {Object.entries(feedbackAnalytics.wordFreq)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 5)
-                .map(([word, count], i) => (
-                  <span
-                    key={i}
-                    className="bg-blue-100 text-blue-800 px-2 py-1 rounded m-1"
-                  >
-                    {word} ({count})
-                  </span>
-                ))
-              }
-
-              {Object.keys(feedbackAnalytics.wordFreq).length === 0 && (
-                <p className="text-gray-500 italic">No feedback data available</p>
-              )}
-            </div>
-          </div>
-
-          {/* Recent reviews */}
-          <div className="mt-4">
-            <h3 className="text-lg font-semibold">Recent Reviews:</h3>
-            {reviews.length > 0 ? (
-              <div className="mt-2">
-                {reviews.slice(0, 3).map((review, i) => (
-                  <div key={i} className="border-b pb-2 mb-2">
-                    <div className="flex justify-between">
-                      <p className="font-medium">{review.user}</p>
-                      <p className="text-yellow-500">{"★".repeat(review.rating)}</p>
-                    </div>
-                    <p className="text-gray-600">{review.comment}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 italic">No reviews available</p>
-            )}
-          </div>
-        </div>
-
-        {activeSection === 'accepted' && (
-          <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
-            <h2 className="text-center mb-5 text-xl font-semibold">Accepted Services</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Service</th>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">User</th>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Days</th>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings
-                    .filter(booking => booking.status === 'accepted')
-                    .map((booking, index) => (
-                      <tr key={index}>
+                  </thead>
+                  <tbody>
+                    {bookings.map((booking, index) => (
+                      <tr key={index} className={(!booking.status || booking.status === 'pending') ? 'bg-yellow-50' : ''}>
                         <td className="border border-gray-300 p-2 text-center">{booking.service}</td>
                         <td className="border border-gray-300 p-2 text-center">
                           {booking.user}
@@ -827,36 +634,228 @@ function ServiceProviderDashboard() {
                         <td className="border border-gray-300 p-2 text-center">{booking.days}</td>
                         <td className="border border-gray-300 p-2 text-center">
                           <button
-                            onClick={() => markCompleted(booking.service)}
-                            className="bg-purple-600 text-white p-2 rounded m-1 hover:bg-purple-700 w-full"
+                            onClick={() => acceptRequest(booking.service)}
+                            className={`bg-green-600 text-white p-2 rounded m-1 hover:bg-green-700 w-full md:w-auto ${booking.status === 'accepted' || booking.status === 'rejected' || booking.status === 'completed' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={booking.status === 'accepted' || booking.status === 'rejected' || booking.status === 'completed'}
                           >
-                            Mark as Completed
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => declineRequest(booking.service)}
+                            className={`bg-red-600 text-white p-2 rounded m-1 hover:bg-red-700 w-full md:w-auto ${booking.status === 'accepted' || booking.status === 'rejected' || booking.status === 'completed' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={booking.status === 'accepted' || booking.status === 'rejected' || booking.status === 'completed'}
+                          >
+                            Decline
                           </button>
                         </td>
                       </tr>
                     ))}
-                  {bookings.filter(booking => booking.status === 'accepted').length === 0 && (
-                    <tr>
-                      <td colSpan="4" className="border border-gray-300 p-2 text-center">No accepted services found.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+
+            {/* Filter Bookings Section */}
+            <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
+              <h2 className="text-center mb-5 text-xl font-semibold">Filter Bookings</h2>
+              <select
+                className="w-full p-3 border border-gray-300 rounded"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="accepted">Accepted</option>
+                <option value="completed">Completed</option>
+                <option value="rejected">Rejected</option>
+              </select>
+
+              {/* Show filtered bookings */}
+              <div className="mt-4 overflow-x-auto">
+                <h3 className="text-lg font-semibold mb-2">Filtered Bookings</h3>
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Service</th>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">User</th>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Days</th>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getFilteredBookings().map((booking, index) => (
+                      <tr key={index}>
+                        <td className="border border-gray-300 p-2 text-center">{booking.service}</td>
+                        <td className="border border-gray-300 p-2 text-center">{booking.user}</td>
+                        <td className="border border-gray-300 p-2 text-center">{booking.days}</td>
+                        <td className="border border-gray-300 p-2 text-center">{booking.status || 'upcoming'}</td>
+                      </tr>
+                    ))}
+                    {getFilteredBookings().length === 0 && (
+                      <tr>
+                        <td colSpan="4" className="border border-gray-300 p-2 text-center">No bookings found with the selected filter.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
 
-        {activeSection === 'manageServices' && (
-          <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
-            <h2 className="text-center mb-5 text-xl font-semibold">Manage Services</h2>
-            <form onSubmit={addService} className="mb-5">
+        {/* ACCEPTED SERVICES SECTION */}
+        {activeSection === 'accepted' && (
+          <>
+            <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
+              <h2 className="text-center mb-5 text-xl font-semibold">Accepted Services</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Service</th>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">User</th>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Days</th>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bookings
+                      .filter(booking => booking.status === 'accepted' || booking.status === 'completed')
+                      .map((booking, index) => (
+                        <tr key={index}>
+                          <td className="border border-gray-300 p-2 text-center">{booking.service}</td>
+                          <td className="border border-gray-300 p-2 text-center">
+                            {booking.user}
+                            <button
+                              onClick={() => {
+                                // Convert user name to userId format (demo purposes)
+                                const userId = booking.user.toLowerCase().replace(' ', '_');
+                                openChat(userId);
+                                toggleChat();
+                              }}
+                              className="ml-2 bg-blue-500 text-white p-1 rounded text-xs hover:bg-blue-600"
+                            >
+                              <MessageSquare size={14} className="inline mr-1" />
+                              Chat
+                            </button>
+                          </td>
+                          <td className="border border-gray-300 p-2 text-center">{booking.days}</td>
+                          <td className="border border-gray-300 p-2 text-center">
+                            <button
+                              onClick={() => markCompleted(booking.service)}
+                              className={`bg-purple-600 text-white p-2 rounded m-1 hover:bg-purple-700 w-full ${booking.status === 'completed' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={booking.status === 'completed'}
+                            >
+                              {booking.status === 'completed' ? 'Completed' : 'Mark Completed'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    {bookings.filter(booking => booking.status === 'accepted').length === 0 && (
+                      <tr>
+                        <td colSpan="4" className="border border-gray-300 p-2 text-center">No accepted bookings found.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Set Availability Section */}
+            <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
+              <h2 className="text-center mb-5 text-xl font-semibold">Set Service Availability</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1">Service Name:</label>
+                  <select
+                    className="w-full p-3 border border-gray-300 rounded mb-4"
+                    value={serviceName}
+                    onChange={(e) => setServiceName(e.target.value)}
+                  >
+                    <option value="">Select Service</option>
+                    {services.map((service, index) => (
+                      <option key={index} value={service.name}>
+                        {service.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <input
+                    type="date"
+                    className="w-full p-3 border border-gray-300 rounded mb-4"
+                    value={availableDate}
+                    onChange={(e) => setAvailableDate(e.target.value)}
+                  />
+
+                  <button
+                    onClick={setAvailability}
+                    className="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700"
+                  >
+                    Add Availability
+                  </button>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Current Availability</h3>
+                  {Object.keys(availableDates).length === 0 ? (
+                    <p className="text-gray-500">No availability set.</p>
+                  ) : (
+                    <div className="max-h-60 overflow-y-auto">
+                      {Object.keys(availableDates).map((service) => (
+                        <div key={service} className="mb-3">
+                          <h4 className="font-medium">{service}</h4>
+                          <ul className="list-disc pl-5">
+                            {availableDates[service].map((date, i) => (
+                              <li key={i} className="flex justify-between items-center">
+                                <span>{new Date(date).toLocaleDateString()}</span>
+                                <button
+                                  onClick={() => removeAvailability(service, date)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  Remove
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Revenue Summary Section */}
+            <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
+              <h2 className="text-center mb-5 text-xl font-semibold">Revenue Summary</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-100 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-blue-800">Total Revenue</h3>
+                  <p className="text-2xl font-bold">${revenueSummary.total.toFixed(2)}</p>
+                </div>
+                <div className="bg-green-100 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-green-800">Total Bookings</h3>
+                  <p className="text-2xl font-bold">{revenueSummary.bookingsCount}</p>
+                </div>
+                <div className="bg-purple-100 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-purple-800">Top Service</h3>
+                  <p className="text-2xl font-bold">{revenueSummary.topService}</p>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* MANAGE SERVICES SECTION */}
+        {activeSection === 'manageServices' && (
+          <>
+            <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
+              <h2 className="text-center mb-5 text-xl font-semibold">Add New Service</h2>
+              <form onSubmit={addService} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-2">Service Name</label>
                   <input
                     type="text"
                     name="serviceName"
-                    placeholder="Kayaking, Boat Tours, etc."
                     className="w-full p-3 border border-gray-300 rounded"
                     value={newService.serviceName}
                     onChange={(e) => handleInputChange(e, setNewService, newService)}
@@ -864,33 +863,18 @@ function ServiceProviderDashboard() {
                   />
                 </div>
                 <div>
-                  <label className="block mb-1">Cost (USD):</label>
+                  <label className="block mb-2">Cost ($)</label>
                   <input
                     type="number"
                     name="serviceCost"
-                    placeholder="Enter price in USD"
                     className="w-full p-3 border border-gray-300 rounded"
                     value={newService.serviceCost}
                     onChange={(e) => handleInputChange(e, setNewService, newService)}
                     required
                   />
                 </div>
-              </div>
-              <div className="mt-4">
-                <label className="block mb-1">Description:</label>
-                <textarea
-                  name="serviceDesc"
-                  placeholder="Describe your service in detail"
-                  className="w-full p-3 border border-gray-300 rounded"
-                  rows="3"
-                  value={newService.serviceDesc}
-                  onChange={(e) => handleInputChange(e, setNewService, newService)}
-                  required
-                ></textarea>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
-                  <label className="block mb-1">Category:</label>
+                  <label className="block mb-2">Category</label>
                   <select
                     name="serviceCategory"
                     className="w-full p-3 border border-gray-300 rounded"
@@ -899,176 +883,218 @@ function ServiceProviderDashboard() {
                     required
                   >
                     <option value="">Select Category</option>
-                    <option value="water">Water Sports</option>
-                    <option value="adventure">Adventure</option>
-                    <option value="relaxation">Relaxation</option>
-                    <option value="tour">Tours</option>
-                    <option value="other">Other</option>
+                    <option value="Adventure">Adventure</option>
+                    <option value="Relaxation">Relaxation</option>
+                    <option value="Tour">Tour</option>
+                    <option value="Water Sports">Water Sports</option>
+                    <option value="Others">Others</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block mb-1">Sub-category:</label>
+                  <label className="block mb-2">Sub-category</label>
                   <input
                     type="text"
                     name="serviceSubCategory"
-                    placeholder="Sub-category name"
                     className="w-full p-3 border border-gray-300 rounded"
                     value={newService.serviceSubCategory}
                     onChange={(e) => handleInputChange(e, setNewService, newService)}
                   />
                 </div>
-              </div>
-              <button
-                type="submit"
-                className="w-full mt-4 p-3 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Add New Service
-              </button>
-            </form>
-
-            <h3 className="text-lg font-semibold mb-2">Current Services</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Name</th>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Description</th>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Cost</th>
-                    <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {services
-                    .filter(service => service.providerId === currentProviderId)
-                    .map((service, index) => (
-                      <tr key={index}>
-                        <td className="border border-gray-300 p-2">{service.name}</td>
-                        <td className="border border-gray-300 p-2">{service.description}</td>
-                        <td className="border border-gray-300 p-2">${service.cost}</td>
-                        <td className="border border-gray-300 p-2 text-center">
-                          <button
-                            onClick={() => deleteService(service.id)}
-                            className="bg-red-600 text-white p-2 rounded m-1 hover:bg-red-700"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  {services.filter(service => service.providerId === currentProviderId).length === 0 && (
-                    <tr>
-                      <td colSpan="4" className="border border-gray-300 p-2 text-center">No services added yet.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                <div className="md:col-span-2">
+                  <label className="block mb-2">Description</label>
+                  <textarea
+                    name="serviceDesc"
+                    className="w-full p-3 border border-gray-300 rounded"
+                    rows="4"
+                    value={newService.serviceDesc}
+                    onChange={(e) => handleInputChange(e, setNewService, newService)}
+                    required
+                  ></textarea>
+                </div>
+                <div className="md:col-span-2">
+                  <button
+                    type="submit"
+                    className="w-full bg-green-600 text-white p-3 rounded hover:bg-green-700"
+                  >
+                    Add Service
+                  </button>
+                </div>
+              </form>
             </div>
-          </div>
+
+            <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
+              <h2 className="text-center mb-5 text-xl font-semibold">Your Services</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Name</th>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Category</th>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Cost</th>
+                      <th className="border border-gray-300 p-2 bg-[#2c3e50] text-white">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {services
+                      .filter(service => service.providerId === currentProviderId)
+                      .map((service, index) => (
+                        <tr key={index}>
+                          <td className="border border-gray-300 p-2 text-center">{service.name}</td>
+                          <td className="border border-gray-300 p-2 text-center">{service.category}</td>
+                          <td className="border border-gray-300 p-2 text-center">${service.cost}</td>
+                          <td className="border border-gray-300 p-2 text-center">
+                            <button
+                              onClick={() => deleteService(service.id)}
+                              className="bg-red-600 text-white p-2 rounded hover:bg-red-700 w-full"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    {services.filter(service => service.providerId === currentProviderId).length === 0 && (
+                      <tr>
+                        <td colSpan="4" className="border border-gray-300 p-2 text-center">No services found.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
 
+        {/* PROFILE MANAGEMENT SECTION */}
         {activeSection === 'profile' && (
           <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
             <h2 className="text-center mb-5 text-xl font-semibold">Profile Management</h2>
-            <form onSubmit={updateProfile}>
-              <div className="md:flex md:items-center mb-4">
-                <div className="md:w-1/3">
-                  <label className="block font-bold md:text-right mb-1 md:mb-0 pr-4">
-                    Display Name
-                  </label>
-                </div>
-                <div className="md:w-2/3">
-                  <input
-                    type="text"
-                    name="providerName"
-                    placeholder="Your Display Name"
-                    className="w-full p-3 border border-gray-300 rounded"
-                    value={profile.providerName}
-                    onChange={(e) => handleInputChange(e, setProfile, profile)}
-                  />
-                </div>
+            <form onSubmit={updateProfile} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-2">Full Name</label>
+                <input
+                  type="text"
+                  name="providerName"
+                  className="w-full p-3 border border-gray-300 rounded"
+                  value={profile.providerName}
+                  onChange={(e) => handleInputChange(e, setProfile, profile)}
+                  placeholder="John Doe"
+                />
               </div>
-              <div className="md:flex md:items-center mb-4">
-                <div className="md:w-1/3">
-                  <label className="block font-bold md:text-right mb-1 md:mb-0 pr-4">
-                    Email
-                  </label>
-                </div>
-                <div className="md:w-2/3">
-                  <input
-                    type="email"
-                    name="providerEmail"
-                    placeholder="your.email@example.com"
-                    className="w-full p-3 border border-gray-300 rounded"
-                    value={profile.providerEmail}
-                    onChange={(e) => handleInputChange(e, setProfile, profile)}
-                  />
-                </div>
+              <div>
+                <label className="block mb-2">Email</label>
+                <input
+                  type="email"
+                  name="providerEmail"
+                  className="w-full p-3 border border-gray-300 rounded"
+                  value={profile.providerEmail}
+                  onChange={(e) => handleInputChange(e, setProfile, profile)}
+                  placeholder="john@example.com"
+                />
               </div>
-              <div className="md:flex md:items-center mb-4">
-                <div className="md:w-1/3">
-                  <label className="block font-bold md:text-right mb-1 md:mb-0 pr-4">
-                    Expertise
-                  </label>
-                </div>
-                <div className="md:w-2/3">
-                  <textarea
-                    name="providerExpertise"
-                    placeholder="Describe your expertise and experience"
-                    className="w-full p-3 border border-gray-300 rounded"
-                    rows="4"
-                    value={profile.providerExpertise}
-                    onChange={(e) => handleInputChange(e, setProfile, profile)}
-                  ></textarea>
-                </div>
+              <div className="md:col-span-2">
+                <label className="block mb-2">Expertise</label>
+                <textarea
+                  name="providerExpertise"
+                  className="w-full p-3 border border-gray-300 rounded"
+                  rows="4"
+                  value={profile.providerExpertise}
+                  onChange={(e) => handleInputChange(e, setProfile, profile)}
+                  placeholder="Your professional expertise and experience..."
+                ></textarea>
               </div>
-              <div className="md:flex md:items-center">
-                <div className="md:w-1/3"></div>
-                <div className="md:w-2/3">
-                  <button
-                    type="submit"
-                    className="w-full p-3 bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    Update Profile
-                  </button>
-                </div>
+              <div className="md:col-span-2">
+                <label className="block mb-2">Profile Photo</label>
+                <input
+                  type="file"
+                  className="w-full p-3 border border-gray-300 rounded"
+                  accept="image/*"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <button
+                  type="submit"
+                  className="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700"
+                >
+                  Update Profile
+                </button>
               </div>
             </form>
           </div>
         )}
 
+        {/* REVIEWS SECTION */}
         {activeSection === 'reviews' && (
-          <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
-            <h2 className="text-center mb-5 text-xl font-semibold">Reviews & Ratings</h2>
-            {reviews.length > 0 ? (
-              <div>
-                {reviews.map((review, index) => (
-                  <div key={index} className="mb-4 p-4 border-b">
-                    <div className="flex justify-between">
-                      <h3 className="font-semibold">{review.user}</h3>
-                      <div className="text-yellow-500">{"★".repeat(review.rating)}</div>
+          <>
+            <div className="bg-white p-5 rounded-lg mb-5 shadow-md">
+              <h2 className="text-center mb-5 text-xl font-semibold">Reviews & Ratings</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Analytics Overview</h3>
+                  <div className="bg-blue-50 p-4 rounded mb-4">
+                    <p className="text-xl">Average Rating: <span className="font-bold">{feedbackAnalytics.avgRating}/5</span></p>
+                    <div className="w-full bg-gray-200 rounded-full h-4 mt-2">
+                      <div
+                        className="bg-blue-600 h-4 rounded-full"
+                        style={{ width: `${(feedbackAnalytics.avgRating / 5) * 100}%` }}
+                      ></div>
                     </div>
-                    <p className="text-gray-700 mt-2">{review.comment}</p>
-                    <p className="text-gray-500 text-sm mt-2">Service: {review.service}</p>
                   </div>
-                ))}
+
+                  <h3 className="text-lg font-semibold mb-3">Common Feedback Terms</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(feedbackAnalytics.wordFreq)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 10)
+                      .map(([word, count], i) => (
+                        <span
+                          key={i}
+                          className="bg-gray-200 px-3 py-1 rounded text-sm"
+                          style={{ fontSize: `${Math.min(count * 0.5 + 0.8, 1.5)}rem` }}
+                        >
+                          {word}
+                        </span>
+                      ))}
+                    {Object.keys(feedbackAnalytics.wordFreq).length === 0 && (
+                      <p className="text-gray-500">No feedback data available.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Recent Reviews</h3>
+                  <div className="max-h-96 overflow-y-auto">
+                    {reviews.length === 0 ? (
+                      <p className="text-gray-500">No reviews available.</p>
+                    ) : (
+                      reviews.map((review, index) => (
+                        <div key={index} className="bg-gray-50 p-3 rounded mb-3 border-l-4 border-blue-500">
+                          <div className="flex justify-between">
+                            <p className="font-semibold">{review.user}</p>
+                            <p>Rating: {review.rating}/5</p>
+                          </div>
+                          <p className="mt-2">{review.comment}</p>
+                          <p className="text-gray-500 text-sm mt-1">{review.date}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
-            ) : (
-              <p className="text-center text-gray-500">No reviews yet.</p>
-            )}
-          </div>
+            </div>
+          </>
         )}
       </div>
 
-      {/* Chat Feature */}
-      <div className={`fixed bottom-5 right-5 z-40 flex flex-col ${chatExpanded ? 'w-96 h-96' : 'w-64 h-64'}`}>
-        {/* Chat button */}
+      {/* Chat feature */}
+      <div className={`fixed bottom-5 right-5 z-40 transition-all duration-300 ${chatOpen ? 'w-80' : 'w-16'} ${chatExpanded ? 'h-auto' : 'h-auto'}`}>
+        {/* Chat toggle button */}
         <button
           onClick={toggleChat}
-          className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg ml-auto flex items-center"
+          className={`flex items-center justify-center w-16 h-16 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 relative ${chatOpen ? 'absolute top-0 right-0' : ''}`}
         >
           <MessageSquare size={24} />
-          {getTotalUnreadCount() > 0 && (
-            <span className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs absolute -top-1 -right-1">
+          {!chatOpen && getTotalUnreadCount() > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
               {getTotalUnreadCount()}
             </span>
           )}
@@ -1076,118 +1102,117 @@ function ServiceProviderDashboard() {
 
         {/* Chat window */}
         {chatOpen && (
-          <div className="bg-white rounded-lg shadow-lg mt-2 flex flex-col h-full border border-gray-300 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-xl overflow-hidden flex flex-col h-full">
             {/* Chat header */}
-
             <div className="bg-blue-600 text-white p-3 flex justify-between items-center">
-              <span className="font-semibold">
-                {activeChat ? getUserDisplayName(activeChat) : 'Chat Messages'}
-              </span>
+              <div className="font-semibold flex items-center">
+                {activeChat && (
+                  <button
+                    onClick={() => setActiveChat(null)}
+                    className="mr-2 text-white hover:text-blue-200 flex items-center"
+                  >
+                    <span className="hidden md:inline">← back</span>
+                    <span className="md:hidden">←</span>
+                  </button>
+                )}
+                {activeChat ? getUserDisplayName(activeChat) : 'Messages'}
+              </div>
               <div className="flex">
-                <button onClick={toggleChatExpansion} className="text-white mr-2">
+                <button
+                  onClick={toggleChatExpansion}
+                  className="text-white hover:text-blue-200 mr-2"
+                >
                   {chatExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
                 </button>
-                <button onClick={toggleChat} className="text-white">
+                <button
+                  onClick={toggleChat}
+                  className="text-white hover:text-blue-200"
+                >
                   <XCircle size={18} />
                 </button>
               </div>
             </div>
 
             {/* Chat content */}
-            <div className="flex h-full">
-              {/* User list sidebar */}
-              {!activeChat && (
-                <div className="w-full h-full overflow-y-scroll border-r border-gray-200">
+            <div className="flex-1 overflow-hidden">
+              {activeChat ? (
+                <>
+                  {/* Chat messages */}
+                  <div className="h-[calc(100%-60px)] overflow-y-auto p-3">
+                    {conversations[activeChat] && conversations[activeChat].map((msg, i) => (
+                      <div
+                        key={i}
+                        className={`mb-2 max-w-[75%] p-2 rounded ${msg.sender === 'provider'
+                          ? 'bg-blue-100 ml-auto'
+                          : 'bg-gray-100'
+                          }`}
+                      >
+                        <div className="text-sm">{msg.message}</div>
+                        <div className="text-xs text-gray-500 mt-1">{msg.timestamp}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Chat input */}
+                  <form onSubmit={sendMessage} className="h-[60px] border-t flex p-2">
+                    <input
+                      type="text"
+                      placeholder="Type a message..."
+                      className="flex-1 p-2 border rounded-l-md focus:outline-none"
+                      value={messageInput}
+                      onChange={(e) => setMessageInput(e.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      className="bg-blue-600 text-white px-3 rounded-r-md"
+                    >
+                      <Send size={20} />
+                    </button>
+                  </form>
+                </>
+              ) : (
+                /* User list */
+                <div className="h-full overflow-y-auto">
                   {activeChatUsers.map((userId) => (
                     <div
                       key={userId}
                       onClick={() => openChat(userId)}
-                      className="p-3 border-b border-gray-200 hover:bg-gray-100 cursor-pointer flex justify-between items-center"
+                      className="p-3 border-b hover:bg-gray-100 cursor-pointer flex justify-between items-center"
                     >
                       <div>
                         <div className="font-medium">{getUserDisplayName(userId)}</div>
                         <div className="text-sm text-gray-500 truncate">
                           {conversations[userId] && conversations[userId].length > 0
-                            ? conversations[userId][conversations[userId].length - 1].message.substring(0, 30) +
-                            (conversations[userId][conversations[userId].length - 1].message.length > 30 ? '...' : '')
+                            ? conversations[userId][conversations[userId].length - 1].message.substring(0, 30) + '...'
                             : 'No messages yet'}
                         </div>
                       </div>
                       {unreadMessages[userId] && (
-                        <span className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
                           {unreadMessages[userId]}
                         </span>
                       )}
                     </div>
                   ))}
-
-                  {activeChatUsers.length === 0 && (
-                    <div className="p-4 text-center text-gray-500">
-                      No active conversations
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Messages */}
-              {activeChat && (
-                <div className="flex flex-col h-full w-full">
-                  {/* Back button */}
-                  <div className="border-t border-gray-200 p-2">
-                    <button
-                      onClick={() => setActiveChat(null)}
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      ← Back
-                    </button>
-                  </div>
-                  <div className="flex-1 p-3 overflow-y-auto">
-                    {conversations[activeChat] && conversations[activeChat].map((msg, i) => (
-                      <div
-                        key={i}
-                        className={`mb-2 max-w-3/4 ${msg.sender === 'provider'
-                          ? 'ml-auto bg-blue-100 rounded-lg p-2'
-                          : 'mr-auto bg-gray-100 rounded-lg p-2'}`}
-                      >
-                        <div className="text-sm">
-                          {msg.message}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1 text-right">
-                          {msg.timestamp}
-                        </div>
-                      </div>
-                    ))}
-
-                    {(!conversations[activeChat] || conversations[activeChat].length === 0) && (
-                      <div className="text-center text-gray-500 mt-4">
-                        No messages yet. Start the conversation!
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Message input */}
-                  <form onSubmit={sendMessage} className="border-t border-gray-200 p-2 flex">
-                    <input
-                      type="text"
-                      value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
-                      placeholder="Type a message..."
-                      className="flex-1 p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:border-blue-500"
-                    />
-                    <button
-                      type="submit"
-                      className="bg-blue-600 text-white p-2 rounded-r-lg hover:bg-blue-700"
-                    >
-                      <Send size={20} />
-                    </button>
-                  </form>
-
                 </div>
               )}
             </div>
           </div>
         )}
       </div>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+
     </div>
   );
 }

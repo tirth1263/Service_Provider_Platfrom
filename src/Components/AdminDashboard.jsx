@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -21,7 +23,7 @@ const AdminDashboard = () => {
     loadUsers();
     loadServices();
     loadReviews();
-    
+
     // Load user theme preference
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (currentUser && currentUser.themePreference) {
@@ -45,18 +47,18 @@ const AdminDashboard = () => {
   const toggleTheme = () => {
     const newTheme = !darkMode;
     setDarkMode(newTheme);
-    
+
     // Save user preference
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (currentUser) {
       currentUser.themePreference = newTheme ? 'dark' : 'light';
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
-      
+
       // Also update the user in the users array
       const allUsers = JSON.parse(localStorage.getItem('users')) || [];
       const updatedUsers = allUsers.map(user => {
         if (user.id === currentUser.id) {
-          return {...user, themePreference: newTheme ? 'dark' : 'light'};
+          return { ...user, themePreference: newTheme ? 'dark' : 'light' };
         }
         return user;
       });
@@ -89,19 +91,85 @@ const AdminDashboard = () => {
   };
 
   const deleteUser = (id) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      const updatedUsers = users.filter(user => user.id !== id);
-      setUsers(updatedUsers);
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-    }
+    const toastId = "delete-user-confirmation-" + id;
+
+    toast.info(
+      <div>
+        <p className="mb-3">Are you sure you want to delete this user?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              const updatedUsers = users.filter(user => user.id !== id);
+              setUsers(updatedUsers);
+              localStorage.setItem('users', JSON.stringify(updatedUsers));
+              toast.dismiss(toastId);
+              toast.success('User deleted successfully!');
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+          >
+            OK
+          </button>
+          <button
+            onClick={() => toast.dismiss(toastId)}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>,
+      {
+        toastId: toastId,
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        position: "top-center"
+      }
+    );
   };
 
   const deleteService = (id) => {
-    if (window.confirm('Are you sure you want to delete this service?')) {
-      const updatedServices = services.filter(service => service.id !== id);
-      setServices(updatedServices);
-      localStorage.setItem('services', JSON.stringify(updatedServices));
-    }
+    // Create a custom ID so we can close it programmatically
+    const toastId = "delete-confirmation-" + id;
+
+    toast.info(
+      <div>
+        <p className="mb-3">Are you sure you want to delete this service?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              // Perform the deletion
+              const updatedServices = services.filter(service => service.id !== id);
+              setServices(updatedServices);
+              localStorage.setItem('services', JSON.stringify(updatedServices));
+
+              // Close the confirmation toast
+              toast.dismiss(toastId);
+
+              // Show success message
+              toast.success('Service deleted successfully!');
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+          >
+            OK
+          </button>
+          <button
+            onClick={() => toast.dismiss(toastId)}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>,
+      {
+        toastId: toastId,
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        position: "top-center"
+      }
+    );
   };
 
   const handleInputChange = (e) => {
@@ -137,8 +205,10 @@ const AdminDashboard = () => {
       category: ''
     });
 
-    alert('Service added successfully!');
+    // Replace alert with toast
+    toast.success('Service added successfully!');
   };
+
 
   const filterUsers = () => {
     if (!userSearchTerm) return users;
@@ -180,10 +250,12 @@ const AdminDashboard = () => {
 
   const handleExportUsers = () => {
     exportToJSON(users, 'users_list.json');
+    toast.info('Users exported successfully!');
   };
 
   const handleExportServices = () => {
     exportToJSON(services, 'services_list.json');
+    toast.info('Services exported successfully!');
   };
 
   // Dynamically generate classes based on theme with emerald colors
@@ -204,10 +276,22 @@ const AdminDashboard = () => {
 
   return (
     <div className={`font-['Poppins',sans-serif] ${bgColor} ${textColor} min-h-screen`}>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme={darkMode ? "dark" : "light"}
+      />
       <header className={`${headerBg} text-white text-center py-4 text-xl font-semibold relative`}>
         <div className="absolute right-4 top-4">
-          <button 
-            onClick={toggleTheme} 
+          <button
+            onClick={toggleTheme}
             className="p-2 rounded-full hover:bg-emerald-700 transition-colors"
             aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
           >

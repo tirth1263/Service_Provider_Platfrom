@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Login = () => {
   const [name, setName] = useState('');
@@ -11,13 +13,13 @@ const Login = () => {
     event.preventDefault();
 
     if (!name.trim()) {
-      alert('Please enter your name to continue');
+      toast.error('Please enter your name to continue');
       return;
     }
 
     // Admin check
     if (email === 'tirth.rank@gmail.com' && password === 'Tirth@1263') {
-      alert(`Welcome Admin ${name}!`);
+      toast.success(`Welcome Admin ${name}!`);
       localStorage.setItem('username', email);
       localStorage.setItem('userFullName', name);
       navigate('/admin-dashboard');
@@ -30,13 +32,13 @@ const Login = () => {
     if (user) {
       // Verify name matches stored name
       if (user.name && user.name !== name) {
-        alert('Name does not match our records. Please try again.');
+        toast.error('Name does not match our records. Please try again.');
         return;
       }
-      
+
       localStorage.setItem('username', user.email);
       localStorage.setItem('userFullName', name);
-      alert(`Welcome ${name} (${user.role})!`);
+      toast.success(`Welcome ${name} (${user.role})!`);
 
       // Route based on role
       if (user.role === 'customer') {
@@ -45,7 +47,7 @@ const Login = () => {
         navigate('/service-provider');
       }
     } else {
-      alert('Invalid email or password. Please register first.');
+      toast.error('Invalid email or password. Please register first.');
       navigate('/register');
     }
   };
@@ -99,12 +101,21 @@ const Login = () => {
             Don't have an account? Register
           </Link>
         </div>
-        <div className="text-center mt-2 sm:mt-3">
-          <Link to="/forgot-password" className="text-sm text-gray-500 hover:text-gray-700">
-            Forgot your password?
-          </Link>
-        </div>
       </div>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+
+
     </div>
   );
 };

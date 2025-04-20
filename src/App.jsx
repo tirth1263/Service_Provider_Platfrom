@@ -3,8 +3,6 @@ import './App.css';
 import Home from './Components/Home';
 import Login from './Components/Pages/Login';
 import Register from './Components/Pages/Register';
-import Room from './Components/Pages/Room';
-import ProtectedRoute from './Components/ProtectedRoute';
 import EditService from './Components/Pages/EditServices';
 import ConsumerDashboard from './Components/ConsumerDashboard'
 import AdminDashboard from './Components/AdminDashboard'
